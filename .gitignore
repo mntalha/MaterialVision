@@ -7,3 +7,5 @@ data/alpaca_mbj_bandgap_train.json
 data/alpaca_mbj_bandgap_train.csv
 data/alpaca_mbj_bandgap_test.json
 data/alpaca_mbj_bandgap_test.csv
+
+models/baseCLIPP/checkpoints/best_clipp.pth

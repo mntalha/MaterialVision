@@ -11,13 +11,13 @@ Notes:
 - Install dependencies: torch, torchvision, timm, transformers, pandas, numpy, tqdm, wandb (optional)
 
 Code Sample Usage:
-python training.py \
+nohup python training.py \
   --train_csv ../../data/alpaca_mbj_bandgap_train.csv \
   --val_csv ../../data/alpaca_mbj_bandgap_test.csv \
   --epochs 10 \
   --batch_size 16 \
-  --lr 1e-4 \
-  --save_dir checkpoints
+  --lr 2e-5 \
+  --save_dir checkpoints &
 """
 
 import json
@@ -208,17 +208,7 @@ def train_epoch(model, dataloader, optimizer, device, temperature, clip_grad_nor
         input_ids = batch['input_ids'].to(device)
         attention_mask = batch['attention_mask'].to(device)
 
-        # one-time debug summary of the first batch
-        if getattr(model, '_first_batch_logged', False) is False and hasattr(model, 'debug'):
-            try:
-                logger.info(f"[DEBUG] first batch images: shape={images.shape} dtype={images.dtype} min={images.min().item():.3f} max={images.max().item():.3f} mean={images.mean().item():.3f}")
-            except Exception:
-                logger.info('[DEBUG] first batch: unable to compute image stats')
-            try:
-                logger.info(f"[DEBUG] first batch input_ids: shape={input_ids.shape} sample_first_row={input_ids[0,:10].cpu().tolist()}")
-            except Exception:
-                logger.info('[DEBUG] first batch: unable to compute input_ids stats')
-            setattr(model, '_first_batch_logged', True)
+        # debug prints removed
 
         img_emb, txt_emb = model(images, input_ids, attention_mask)
         loss = contrastive_loss(img_emb, txt_emb, temperature)
@@ -263,17 +253,14 @@ def main():
     parser.add_argument('--val_csv', type=str, default='../../data/alpaca_mbj_bandgap_test.csv')
     parser.add_argument('--epochs', type=int, default=50)
     parser.add_argument('--batch_size', type=int, default=16)
-    parser.add_argument('--lr', type=float, default=1e-4)
+    parser.add_argument('--lr', type=float, default=2e-5)
     parser.add_argument('--proj_dim', type=int, default=256)
     parser.add_argument('--temperature', type=float, default=0.07)
     parser.add_argument('--save_dir', type=str, default='checkpoints')
     parser.add_argument('--no_wandb', action='store_true')
     parser.add_argument('--clip_grad_norm', type=float, default=1.0, help='Max norm for gradient clipping (0 or None to disable)')
     parser.add_argument('--freeze_backbones', action='store_true', help='Freeze vision and text encoders and only train projection heads')
-    parser.add_argument('--debug', action='store_true', help='Enable extra diagnostic logging (parameter counts, sample statistics)')
-    parser.add_argument('--inspect_row', type=int, default=None, help='If set, inspect a single CSV row index from train CSV and exit')
-    parser.add_argument('--inspect_n', type=int, default=None, help='If set, inspect N random rows from the train CSV and exit')
-    parser.add_argument('--inspect_unorm', action='store_true', help='When inspecting, also save transformed+unnormalized images to match model input')
+    # debug flag removed
     args = parser.parse_args()
 
     # Prepare logging and device
@@ -288,71 +275,7 @@ def main():
     val_df = pd.read_csv(args.val_csv)
 
     tokenizer = AutoTokenizer.from_pretrained('allenai/scibert_scivocab_uncased')
-    # deterministic transforms used for inspection that match model preprocessing (no augmentations)
-    INSPECT_TRANSFORMS = transforms.Compose([
-        transforms.Resize((224, 224)),
-        transforms.ToTensor(),
-        transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
-    ])
-
-    def unnormalize_tensor(tensor, mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225)):
-        """Un-normalize a torch tensor in CHW with Normalize(mean,std) applied previously.
-
-        Returns a uint8 HxWx3 numpy array suitable for saving with PIL.
-        """
-        if not isinstance(tensor, torch.Tensor):
-            tensor = torch.tensor(tensor)
-        t = tensor.clone().detach().cpu()
-        for c in range(3):
-            t[c] = t[c] * std[c] + mean[c]
-        t = t.clamp(0, 1)
-        arr = (t.numpy() * 255).astype(np.uint8)
-        # convert CHW to HWC
-        arr = np.transpose(arr, (1, 2, 0))
-        return arr
-
-    def inspect_csv_row(df, idx, out_dir, save_unorm=False):
-        """Inspect a row: print raw image JSON, array stats from list_to_image, and save a PNG.
-
-        If save_unorm is True, also apply the deterministic transforms used by the model (no augmentations),
-        then unnormalize and save that image so it resembles the model input.
-        """
-        if idx < 0 or idx >= len(df):
-            logger.error(f"inspect_row {idx} out of range (0..{len(df)-1})")
-            return
-        row = df.iloc[idx]
-        raw = row['image']
-        logger.info(f"Raw image field (first 500 chars): {str(raw)[:500]}")
-        try:
-            arr = list_to_image(raw)
-        except Exception as e:
-            logger.exception(f"list_to_image failed: {e}")
-            return
-        arr = np.array(arr)
-        logger.info(f"Converted image array shape={arr.shape} dtype={arr.dtype} min={arr.min()} max={arr.max()} mean={arr.mean():.3f}")
-        # save a visualization of raw array
-        out_dir = Path(out_dir)
-        out_dir.mkdir(parents=True, exist_ok=True)
-        save_path = out_dir / f'inspect_row_{idx}_raw.png'
-        try:
-            img = Image.fromarray(arr.astype(np.uint8))
-            img = img.convert('RGB')
-            img.save(str(save_path))
-            logger.info(f'Saved inspected raw image to {save_path}')
-        except Exception as e:
-            logger.exception(f'Failed to save inspected raw image: {e}')
-
-        # optionally save transformed + un-normalized image to show what model sees
-        if save_unorm:
-            try:
-                pil = Image.fromarray(arr.astype(np.uint8)).convert('RGB')
-                t = INSPECT_TRANSFORMS(pil)  # CHW tensor normalized
-                un = unnormalize_tensor(t)
-                save_path_u = out_dir / f'inspect_row_{idx}_unorm.png'
-                Image.fromarray(un).save(str(save_path_u))
-                logger.info(f'Saved inspected transformed+unorm image to {save_path_u}')
-            except Exception as e:
-                logger.exception(f'Failed to save transformed+unorm image: {e}')
+    # (inspection helpers removed)
 
     train_ds = ImageTextDataset(train_df, tokenizer, train=True)
     val_ds = ImageTextDataset(val_df, tokenizer, train=False)
@@ -362,23 +285,7 @@ def main():
 
     model = CLIPP(proj_dim=args.proj_dim).to(device)
 
-    # attach debug flag to model for use in train loop
-    if args.debug:
-        total = sum(p.numel() for p in model.parameters())
-        trainable = sum(p.numel() for p in model.parameters() if p.requires_grad)
-        logger.info(f"Model total params: {total:,}  trainable params: {trainable:,}")
-        def module_param_count(m):
-            return sum(p.numel() for p in m.parameters()), sum(p.numel() for p in m.parameters() if p.requires_grad)
-        v_tot, v_train = module_param_count(model.vision)
-        t_tot, t_train = module_param_count(model.text_encoder)
-        ip_tot, ip_train = module_param_count(model.img_proj)
-        tp_tot, tp_train = module_param_count(model.txt_proj)
-        logger.info(f"vision params: total={v_tot:,} trainable={v_train:,}")
-        logger.info(f"text_encoder params: total={t_tot:,} trainable={t_train:,}")
-        logger.info(f"img_proj params: total={ip_tot:,} trainable={ip_train:,}")
-        logger.info(f"txt_proj params: total={tp_tot:,} trainable={tp_train:,}")
-    # mark model for debug usage in train loop
-    setattr(model, 'debug', True)
+    # debug instrumentation removed
 
     # Optionally freeze pretrained backbones and only train projection heads
     if args.freeze_backbones:
@@ -396,13 +303,7 @@ def main():
 
     optimizer = torch.optim.AdamW(trainable_params, lr=args.lr)
 
-    # quick CSV inspection mode
-    if args.inspect_row is not None:
-        # ensure save_dir exists so inspect helper can write files
-        save_dir = Path(args.save_dir)
-        save_dir.mkdir(parents=True, exist_ok=True)
-        inspect_csv_row(train_df, args.inspect_row, save_dir, save_unorm=args.inspect_unorm)
-        return
+    # (inspection helpers removed) - continue to training
 
     save_dir = Path(args.save_dir)
     save_dir.mkdir(parents=True, exist_ok=True)
