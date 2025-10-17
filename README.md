@@ -83,10 +83,72 @@ stem_image = stem_sim.simulate_surface(atoms=structure)[0]
 - STEM image generation
 - Image processing and enhancement
 
-### 3. Vision Transformer Integration
+#### 3. Vision Transformer Integration
 - Text-image matching
 - Feature extraction
 - Multi-modal learning
+
+## Model Performance Comparison
+
+We compare two approaches for materials science text-image retrieval:
+1. **CLIPP**: Our custom dual-encoder model trained from scratch
+2. **BLIP**: Fine-tuned Salesforce BLIP model (blip-itm-large-coco)
+
+### Training Progress
+
+#### CLIPP Training and Validation Loss
+![CLIPP Loss](models/baseCLIPP/checkpoints/loss.png)
+*Training progress of our custom CLIPP model*
+
+#### BLIP Training and Validation Loss
+![BLIP Loss](models/Salesforce/checkpoints_blip/loss.png)
+*Training progress of the fine-tuned BLIP model*
+
+### Retrieval Performance
+
+Below are the image-text retrieval metrics (Top-k accuracy) for both models:
+
+#### CLIPP Model Performance
+```
+Validation Set:
+- Top-1: 0.1670
+- Top-5: 0.4040
+- Top-10: 0.5300
+
+Training Set:
+- Top-1: 0.1930
+- Top-5: 0.4856
+- Top-10: 0.6360
+```
+
+#### BLIP Model Performance
+```
+Validation Set:
+- Top-1: 0.1730
+- Top-5: 0.4290
+- Top-10: 0.5520
+
+Training Set:
+- Top-1: 0.3868
+- Top-5: 0.7564
+- Top-10: 0.8728
+```
+
+### Model Characteristics
+
+**CLIPP**
+- Vision encoder: Pretrained ViT-Base/16 (patch size 16x224x224)
+- Text encoder: SciBERT (allenai/scibert_scivocab_uncased)
+- Training: CLIP-style contrastive learning with temperature 0.07
+- Projection: Both image and text features projected to 256-dim space
+- Loss: Bidirectional contrastive loss (image→text and text→image)
+
+**BLIP**
+- Base model: "Salesforce/blip-itm-large-coco"
+- Architecture: ViT-L/16 vision encoder + BERT text encoder
+- Training: Fine-tuned with image-text matching (ITM)
+- Original pretraining: COCO dataset with 850K images
+- Adapts general visual understanding to materials domain
 
 ## Applications
 

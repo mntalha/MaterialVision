@@ -1,0 +1,40 @@
+2025-10-16 03:57:44,483 INFO: Logging to checkpoints_blip/train.log
+2025-10-16 03:57:44,483 INFO: ===== Epoch 1/10 =====
+2025-10-16 04:02:19,438 INFO: Epoch 1: train_loss=4.2732, val_loss=1.6947
+2025-10-16 04:02:19,598 INFO: Saved loss plot to checkpoints_blip/loss.png
+2025-10-16 04:02:25,394 INFO: Saved new best checkpoint to checkpoints_blip/best_blip.pth
+2025-10-16 04:02:25,395 INFO: ===== Epoch 2/10 =====
+2025-10-16 04:06:59,083 INFO: Epoch 2: train_loss=2.5836, val_loss=1.3617
+2025-10-16 04:06:59,245 INFO: Saved loss plot to checkpoints_blip/loss.png
+2025-10-16 04:07:10,008 INFO: Saved new best checkpoint to checkpoints_blip/best_blip.pth
+2025-10-16 04:07:10,008 INFO: ===== Epoch 3/10 =====
+2025-10-16 04:11:43,059 INFO: Epoch 3: train_loss=1.7077, val_loss=1.1543
+2025-10-16 04:11:43,243 INFO: Saved loss plot to checkpoints_blip/loss.png
+2025-10-16 04:11:54,007 INFO: Saved new best checkpoint to checkpoints_blip/best_blip.pth
+2025-10-16 04:11:54,008 INFO: ===== Epoch 4/10 =====
+2025-10-16 04:16:28,025 INFO: Epoch 4: train_loss=1.1043, val_loss=0.9885
+2025-10-16 04:16:28,197 INFO: Saved loss plot to checkpoints_blip/loss.png
+2025-10-16 04:16:37,430 INFO: Saved new best checkpoint to checkpoints_blip/best_blip.pth
+2025-10-16 04:16:37,431 INFO: ===== Epoch 5/10 =====
+2025-10-16 04:21:11,249 INFO: Epoch 5: train_loss=0.7762, val_loss=0.8909
+2025-10-16 04:21:11,431 INFO: Saved loss plot to checkpoints_blip/loss.png
+2025-10-16 04:21:24,305 INFO: Saved new best checkpoint to checkpoints_blip/best_blip.pth
+2025-10-16 04:21:24,306 INFO: ===== Epoch 6/10 =====
+2025-10-16 04:25:57,450 INFO: Epoch 6: train_loss=0.5389, val_loss=0.8972
+2025-10-16 04:25:57,622 INFO: Saved loss plot to checkpoints_blip/loss.png
+2025-10-16 04:25:57,622 INFO: ===== Epoch 7/10 =====
+2025-10-16 04:30:31,428 INFO: Epoch 7: train_loss=0.4177, val_loss=0.8220
+2025-10-16 04:30:31,614 INFO: Saved loss plot to checkpoints_blip/loss.png
+2025-10-16 04:30:43,130 INFO: Saved new best checkpoint to checkpoints_blip/best_blip.pth
+2025-10-16 04:30:43,131 INFO: ===== Epoch 8/10 =====
+2025-10-16 04:35:17,122 INFO: Epoch 8: train_loss=0.3156, val_loss=0.8096
+2025-10-16 04:35:17,302 INFO: Saved loss plot to checkpoints_blip/loss.png
+2025-10-16 04:35:27,466 INFO: Saved new best checkpoint to checkpoints_blip/best_blip.pth
+2025-10-16 04:35:27,467 INFO: ===== Epoch 9/10 =====
+2025-10-16 04:40:01,358 INFO: Epoch 9: train_loss=0.2612, val_loss=0.8040
+2025-10-16 04:40:01,542 INFO: Saved loss plot to checkpoints_blip/loss.png
+2025-10-16 04:40:12,865 INFO: Saved new best checkpoint to checkpoints_blip/best_blip.pth
+2025-10-16 04:40:12,866 INFO: ===== Epoch 10/10 =====
+2025-10-16 04:44:46,287 INFO: Epoch 10: train_loss=0.2160, val_loss=0.7969
+2025-10-16 04:44:46,454 INFO: Saved loss plot to checkpoints_blip/loss.png
+2025-10-16 04:44:57,819 INFO: Saved new best checkpoint to checkpoints_blip/best_blip.pth
