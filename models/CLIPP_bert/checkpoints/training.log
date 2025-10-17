@@ -1,0 +1,40 @@
+2025-10-16 22:51:45,478 INFO: Epoch: 1/10
+2025-10-16 22:54:30,194 INFO: Train Loss: 3.2946
+2025-10-16 22:54:30,194 INFO: Valid Loss: 3.0993
+2025-10-16 22:54:31,859 INFO: Saved Best Model to checkpoints/best_clipp_bert.pth!
+2025-10-16 22:54:31,984 INFO: Epoch: 2/10
+2025-10-16 22:57:15,730 INFO: Train Loss: 2.9990
+2025-10-16 22:57:15,731 INFO: Valid Loss: 2.8983
+2025-10-16 22:57:17,334 INFO: Saved Best Model to checkpoints/best_clipp_bert.pth!
+2025-10-16 22:57:17,461 INFO: Epoch: 3/10
+2025-10-16 23:00:00,626 INFO: Train Loss: 2.8701
+2025-10-16 23:00:00,626 INFO: Valid Loss: 2.8331
+2025-10-16 23:00:02,541 INFO: Saved Best Model to checkpoints/best_clipp_bert.pth!
+2025-10-16 23:00:02,663 INFO: Epoch: 4/10
+2025-10-16 23:02:46,320 INFO: Train Loss: 2.7981
+2025-10-16 23:02:46,320 INFO: Valid Loss: 2.7861
+2025-10-16 23:02:47,908 INFO: Saved Best Model to checkpoints/best_clipp_bert.pth!
+2025-10-16 23:02:48,028 INFO: Epoch: 5/10
+2025-10-16 23:05:31,504 INFO: Train Loss: 2.7495
+2025-10-16 23:05:31,504 INFO: Valid Loss: 2.7577
+2025-10-16 23:05:33,442 INFO: Saved Best Model to checkpoints/best_clipp_bert.pth!
+2025-10-16 23:05:33,567 INFO: Epoch: 6/10
+2025-10-16 23:08:16,470 INFO: Train Loss: 2.7149
+2025-10-16 23:08:16,470 INFO: Valid Loss: 2.7320
+2025-10-16 23:08:18,359 INFO: Saved Best Model to checkpoints/best_clipp_bert.pth!
+2025-10-16 23:08:18,480 INFO: Epoch: 7/10
+2025-10-16 23:11:01,959 INFO: Train Loss: 2.6775
+2025-10-16 23:11:01,959 INFO: Valid Loss: 2.7177
+2025-10-16 23:11:03,566 INFO: Saved Best Model to checkpoints/best_clipp_bert.pth!
+2025-10-16 23:11:03,683 INFO: Epoch: 8/10
+2025-10-16 23:13:48,348 INFO: Train Loss: 2.6572
+2025-10-16 23:13:48,348 INFO: Valid Loss: 2.7018
+2025-10-16 23:13:49,940 INFO: Saved Best Model to checkpoints/best_clipp_bert.pth!
+2025-10-16 23:13:50,064 INFO: Epoch: 9/10
+2025-10-16 23:16:34,307 INFO: Train Loss: 2.6372
+2025-10-16 23:16:34,307 INFO: Valid Loss: 2.6886
+2025-10-16 23:16:35,873 INFO: Saved Best Model to checkpoints/best_clipp_bert.pth!
+2025-10-16 23:16:36,002 INFO: Epoch: 10/10
+2025-10-16 23:19:19,590 INFO: Train Loss: 2.6141
+2025-10-16 23:19:19,590 INFO: Valid Loss: 2.6796
+2025-10-16 23:19:21,768 INFO: Saved Best Model to checkpoints/best_clipp_bert.pth!

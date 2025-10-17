@@ -108,7 +108,9 @@ We compare two approaches for materials science text-image retrieval:
 
 Below are the image-text retrieval metrics (Top-k accuracy) for both models:
 
-#### CLIPP Model Performance
+#### CLIPP Models Performance
+
+##### CLIPP-SciBERT
 ```
 Validation Set:
 - Top-1: 0.1670
@@ -119,6 +121,19 @@ Training Set:
 - Top-1: 0.1930
 - Top-5: 0.4856
 - Top-10: 0.6360
+```
+
+##### CLIPP-DistilBERT
+```
+Validation Set:
+- Top-1: 0.0400
+- Top-5: 0.1430
+- Top-10: 0.2120
+
+Training Set:
+- Top-1: 0.0202
+- Top-5: 0.0764
+- Top-10: 0.1330
 ```
 
 #### BLIP Model Performance
@@ -136,12 +151,22 @@ Training Set:
 
 ### Model Characteristics
 
-**CLIPP**
+**CLIPP Models**
+
+*CLIPP-SciBERT*
 - Vision encoder: Pretrained ViT-Base/16 (patch size 16x224x224)
 - Text encoder: SciBERT (allenai/scibert_scivocab_uncased)
 - Training: CLIP-style contrastive learning with temperature 0.07
 - Projection: Both image and text features projected to 256-dim space
 - Loss: Bidirectional contrastive loss (image→text and text→image)
+
+*CLIPP-DistilBERT*
+- Vision encoder: Pretrained ViT-Base/16 (patch size 16x224x224)
+- Text encoder: DistilBERT (distilbert-base-uncased)
+- Training: CLIP-style contrastive learning with temperature 0.07
+- Projection: Both image and text features projected to 256-dim space
+- Loss: Bidirectional contrastive loss (image→text and text→image)
+- Advantage: Lighter text encoder with comparable performance
 
 **BLIP**
 - Base model: "Salesforce/blip-itm-large-coco"

@@ -8,5 +8,6 @@ data/alpaca_mbj_bandgap_train.csv
 data/alpaca_mbj_bandgap_test.json
 data/alpaca_mbj_bandgap_test.csv
 
-models/baseCLIPP/checkpoints/best_clipp.pth
+models/CLIPP_allenai/checkpoints/best_clipp.pth
 models/Salesforce/checkpoints_blip/best_blip.pth
+models/CLIPP_bert/checkpoints/best_clipp_bert.pth
