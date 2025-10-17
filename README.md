@@ -96,9 +96,17 @@ We compare two approaches for materials science text-image retrieval:
 
 ### Training Progress
 
-#### CLIPP Training and Validation Loss
-![CLIPP Loss](models/baseCLIPP/checkpoints/loss.png)
-*Training progress of our custom CLIPP model*
+#### CLIPP-SciBERT Training and Validation Loss
+![CLIPP-SciBERT Loss](models/CLIPP_allenai/checkpoints/loss.png)
+*Training progress of our CLIPP-SciBERT model*
+
+#### CLIPP-DistilBERT Training and Validation Loss
+![CLIPP-DistilBERT Loss](models/CLIPP_bert/checkpoints/loss.png)
+*Training progress of our CLIPP-DistilBERT model*
+
+#### MobileCLIP Training and Validation Loss
+![MobileCLIP Loss](models/Apple_MobileCLIP/checkpoints/loss.png)
+*Training progress of our MobileCLIP model*
 
 #### BLIP Training and Validation Loss
 ![BLIP Loss](models/Salesforce/checkpoints_blip/loss.png)
