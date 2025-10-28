@@ -254,7 +254,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--train_csv', type=str, default='../../data/alpaca_mbj_bandgap_train.csv')
     parser.add_argument('--val_csv', type=str, default='../../data/alpaca_mbj_bandgap_test.csv')
-    parser.add_argument('--epochs', type=int, default=50)
+    parser.add_argument('--epochs', type=int, default=10)
     parser.add_argument('--batch_size', type=int, default=16)
     parser.add_argument('--lr', type=float, default=2e-5)
     parser.add_argument('--proj_dim', type=int, default=256)
