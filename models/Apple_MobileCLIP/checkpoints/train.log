@@ -1,0 +1,6 @@
+2025-10-28 01:25:07,413 INFO: Logging to checkpoints/train.log
+2025-10-28 01:25:07,413 INFO: Epoch 1/50
+2025-10-28 01:26:56,995 INFO: Saved loss plot to checkpoints/loss.png
+2025-10-28 01:26:56,995 INFO: Epoch 1 Train Loss: 2.0086 Val Loss: 1.5590
+2025-10-28 01:26:58,974 INFO: Saved best model to checkpoints/best_clipp.pth
+2025-10-28 01:26:58,975 INFO: Epoch 2/50
