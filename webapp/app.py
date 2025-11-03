@@ -26,7 +26,7 @@ MODEL_PATHS = {
     'CLIPP-SciBERT': '../models/CLIPP_allenai/checkpoints/best_clipp.pth',
     'CLIPP-DistilBERT': '../models/CLIPP_bert/checkpoints/best_clipp_bert.pth',
     'MobileCLIP': '../models/Apple_MobileCLIP/checkpoints/best_mobileclip.pth',
-    'BLIP': None  # Using default pretrained weights for BLIP
+    'BLIP': '../models/Apple_MobileCLIP/checkpoints/best_clipp_apple.pth'
 }
 
 

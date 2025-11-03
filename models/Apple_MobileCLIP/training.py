@@ -79,10 +79,42 @@ def list_to_image(img_list, size=224):
     return arr.reshape(side, side)
 
 
+def parse_chemical_formula(formula):
+    """Parse a chemical formula into separated elements with counts.
+    
+    Args:
+        formula: Chemical formula string like "Fe2O3"
+        
+    Returns:
+        Formatted string like "2 Fe 3 O" or original formula if parsing fails
+    """
+    if not formula:
+        return ""
+    
+    try:
+        # Match element-count pairs: uppercase letter + optional lowercase + optional digits
+        pattern = r'([A-Z][a-z]?)(\d*)'
+        matches = re.findall(pattern, formula)
+        
+        if not matches:
+            return formula
+        
+        result_parts = []
+        for element, count in matches:
+            # If no count specified, it's implicitly 1
+            if not count:
+                count = "1"
+            result_parts.extend([count, element])
+        
+        return ' '.join(result_parts)
+    except Exception:
+        return formula
+
+
 def extract_formula_bandgap(text):
     """Extract chemical formula and MBJ bandgap from a prompt text.
 
-    Returns a compact caption string like: "Fe2O3 1.23" or the original text if parsing fails.
+    Returns a compact caption string like: "2 Fe 3 O 1.23" or the original text if parsing fails.
     """
     if not isinstance(text, str):
         return str(text)
@@ -99,23 +131,10 @@ def extract_formula_bandgap(text):
         bandgap = None
     if formula is None and bandgap is None:
         return text
-    return f"{formula if formula else ''} {bandgap if bandgap is not None else ''}".strip()
-
-
-# Image transforms - now handled by MobileCLIP preprocessor
-# TRAIN_TRANSFORMS = transforms.Compose([
-#     transforms.Resize((224, 224)),
-#     transforms.RandomHorizontalFlip(),
-#     transforms.RandomRotation(8),
-#     transforms.ToTensor(),
-#     transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
-# ])
-
-# VAL_TRANSFORMS = transforms.Compose([
-#     transforms.Resize((224, 224)),
-#     transforms.ToTensor(),
-#     transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
-# ])
+    
+    # Parse the chemical formula to separate elements
+    parsed_formula = parse_chemical_formula(formula) if formula else ""
+    return f"{parsed_formula} {bandgap if bandgap is not None else ''}".strip()
 
 
 class ImageTextDataset(Dataset):
@@ -155,15 +174,14 @@ class ImageTextDataset(Dataset):
         }
 
 
-class CLIPP(nn.Module):
+class AppleCLIPP(nn.Module):
     """MobileCLIP-S2 based dual-encoder model."""
     def __init__(self, proj_dim=256):
         super().__init__()
         # Load MobileCLIP-S2 model
-        self.model, _, _ = open_clip.create_model_and_transforms('MobileCLIP-S2', pretrained='datacompdr')
-        
+        self.model, _, self.preprocess = open_clip.create_model_and_transforms('MobileCLIP-S2', pretrained='datacompdr')
+
         # Get the embedding dimensions from the model
-        # MobileCLIP models typically have these dimensions, but we'll be safe
         self.embed_dim = getattr(self.model, 'embed_dim', 512)
         
         # Optional projection heads to reduce dimension if needed
@@ -252,8 +270,8 @@ def validate(model, dataloader, device, temperature):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--train_csv', type=str, default='../../data/alpaca_mbj_bandgap_train.csv')
-    parser.add_argument('--val_csv', type=str, default='../../data/alpaca_mbj_bandgap_test.csv')
+    parser.add_argument('--train_csv', type=str, default='./data/alpaca_mbj_bandgap_train.csv')
+    parser.add_argument('--val_csv', type=str, default='./data/alpaca_mbj_bandgap_test.csv')
     parser.add_argument('--epochs', type=int, default=10)
     parser.add_argument('--batch_size', type=int, default=16)
     parser.add_argument('--lr', type=float, default=2e-5)
@@ -278,16 +296,16 @@ def main():
     val_df = pd.read_csv(args.val_csv)
 
     # Initialize MobileCLIP-S2 model and preprocessor
-    model_s2, _, preprocess_s2 = open_clip.create_model_and_transforms('MobileCLIP-S2', pretrained='datacompdr')
+    model = AppleCLIPP(proj_dim=args.proj_dim).to(device)
+
     tokenizer_s2 = open_clip.get_tokenizer('MobileCLIP-S2')
 
-    train_ds = ImageTextDataset(train_df, tokenizer_s2, preprocess_s2, train=True)
-    val_ds = ImageTextDataset(val_df, tokenizer_s2, preprocess_s2, train=False)
+    train_ds = ImageTextDataset(train_df, tokenizer_s2, model.preprocess, train=True)
+    val_ds = ImageTextDataset(val_df, tokenizer_s2, model.preprocess, train=False)
 
     train_loader = DataLoader(train_ds, batch_size=args.batch_size, shuffle=True, num_workers=4)
     val_loader = DataLoader(val_ds, batch_size=args.batch_size, shuffle=False, num_workers=4)
 
-    model = CLIPP(proj_dim=args.proj_dim).to(device)
 
     # debug instrumentation removed
 
@@ -298,10 +316,10 @@ def main():
             param.requires_grad = False
 
     # Create optimizer only for trainable parameters
-    trainable_params = [p for p in model.parameters() if p.requires_grad]
+    trainable_params = [p for p in model.model.parameters() if p.requires_grad]
     if len(trainable_params) == 0:
         logger.warning('No trainable parameters found (all parameters frozen). Creating optimizer for all parameters instead.')
-        trainable_params = model.parameters()
+        trainable_params = model.model.parameters()
 
     optimizer = torch.optim.AdamW(trainable_params, lr=args.lr)
 
@@ -359,7 +377,7 @@ def main():
 
         if val_loss < best_val:
             best_val = val_loss
-            ckpt_path = save_dir / 'best_clipp.pth'
+            ckpt_path = save_dir / 'best_clipp_apple.pth'
             torch.save({'epoch': epoch, 'model_state_dict': model.state_dict(), 'optimizer_state_dict': optimizer.state_dict(), 'val_loss': val_loss}, ckpt_path)
             logger.info(f'Saved best model to {ckpt_path}')
 
