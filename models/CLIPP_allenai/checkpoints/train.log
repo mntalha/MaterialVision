@@ -1,44 +1,171 @@
-2025-10-15 02:34:23,063 INFO: Logging to checkpoints/train.log
-2025-10-15 02:34:23,063 INFO: Epoch 1/10
-2025-10-15 02:35:48,523 INFO: Logging to checkpoints/train.log
-2025-10-15 02:35:48,523 INFO: Epoch 1/10
-2025-10-15 02:37:42,766 INFO: Saved loss plot to checkpoints/loss.png
-2025-10-15 02:37:42,766 INFO: Epoch 1 Train Loss: 2.2507 Val Loss: 1.7265
-2025-10-15 02:37:46,771 INFO: Saved best model to checkpoints/best_clipp.pth
-2025-10-15 02:37:46,771 INFO: Epoch 2/10
-2025-10-15 02:39:40,235 INFO: Saved loss plot to checkpoints/loss.png
-2025-10-15 02:39:40,235 INFO: Epoch 2 Train Loss: 1.5284 Val Loss: 1.3620
-2025-10-15 02:39:45,167 INFO: Saved best model to checkpoints/best_clipp.pth
-2025-10-15 02:39:45,168 INFO: Epoch 3/10
-2025-10-15 02:40:35,970 INFO: Logging to checkpoints/train.log
-2025-10-15 02:40:35,970 INFO: Epoch 1/10
-2025-10-15 02:41:38,775 INFO: Saved loss plot to checkpoints/loss.png
-2025-10-15 02:41:38,775 INFO: Epoch 3 Train Loss: 1.0681 Val Loss: 1.2220
-2025-10-15 02:41:43,799 INFO: Saved best model to checkpoints/best_clipp.pth
-2025-10-15 02:41:43,799 INFO: Epoch 4/10
-2025-10-15 02:43:37,211 INFO: Saved loss plot to checkpoints/loss.png
-2025-10-15 02:43:37,211 INFO: Epoch 4 Train Loss: 0.8052 Val Loss: 1.1583
-2025-10-15 02:43:43,134 INFO: Saved best model to checkpoints/best_clipp.pth
-2025-10-15 02:43:43,135 INFO: Epoch 5/10
-2025-10-15 02:45:36,813 INFO: Saved loss plot to checkpoints/loss.png
-2025-10-15 02:45:36,814 INFO: Epoch 5 Train Loss: 0.6183 Val Loss: 1.1165
-2025-10-15 02:45:41,367 INFO: Saved best model to checkpoints/best_clipp.pth
-2025-10-15 02:45:41,368 INFO: Epoch 6/10
-2025-10-15 02:47:34,704 INFO: Saved loss plot to checkpoints/loss.png
-2025-10-15 02:47:34,704 INFO: Epoch 6 Train Loss: 0.4847 Val Loss: 0.9758
-2025-10-15 02:47:40,324 INFO: Saved best model to checkpoints/best_clipp.pth
-2025-10-15 02:47:40,325 INFO: Epoch 7/10
-2025-10-15 02:49:33,516 INFO: Saved loss plot to checkpoints/loss.png
-2025-10-15 02:49:33,516 INFO: Epoch 7 Train Loss: 0.3800 Val Loss: 0.9855
-2025-10-15 02:49:33,516 INFO: Epoch 8/10
-2025-10-15 02:51:26,906 INFO: Saved loss plot to checkpoints/loss.png
-2025-10-15 02:51:26,906 INFO: Epoch 8 Train Loss: 0.3230 Val Loss: 0.9096
-2025-10-15 02:51:32,182 INFO: Saved best model to checkpoints/best_clipp.pth
-2025-10-15 02:51:32,182 INFO: Epoch 9/10
-2025-10-15 02:53:25,900 INFO: Saved loss plot to checkpoints/loss.png
-2025-10-15 02:53:25,901 INFO: Epoch 9 Train Loss: 0.2518 Val Loss: 0.8373
-2025-10-15 02:53:31,392 INFO: Saved best model to checkpoints/best_clipp.pth
-2025-10-15 02:53:31,392 INFO: Epoch 10/10
-2025-10-15 02:55:24,984 INFO: Saved loss plot to checkpoints/loss.png
-2025-10-15 02:55:24,984 INFO: Epoch 10 Train Loss: 0.2166 Val Loss: 0.8745
-2025-10-15 02:55:24,984 INFO: Training finished
+2025-11-02 21:52:50,705 INFO: Logging to checkpoints/train.log
+2025-11-02 21:52:50,705 INFO: Epoch 1/50
+2025-11-02 23:31:35,599 INFO: Logging to checkpoints/train.log
+2025-11-02 23:31:35,599 INFO: Epoch 1/50
+2025-11-02 23:33:30,335 INFO: Saved loss plot to checkpoints/loss.png
+2025-11-02 23:33:30,335 INFO: Epoch 1 Train Loss: 1.8857 Val Loss: 1.3179
+2025-11-02 23:33:33,307 INFO: Saved best model to checkpoints/best_clipp.pth
+2025-11-02 23:33:33,307 INFO: Epoch 2/50
+2025-11-02 23:35:26,986 INFO: Saved loss plot to checkpoints/loss.png
+2025-11-02 23:35:26,986 INFO: Epoch 2 Train Loss: 1.0657 Val Loss: 0.9392
+2025-11-02 23:35:32,022 INFO: Saved best model to checkpoints/best_clipp.pth
+2025-11-02 23:35:32,023 INFO: Epoch 3/50
+2025-11-02 23:37:25,530 INFO: Saved loss plot to checkpoints/loss.png
+2025-11-02 23:37:25,531 INFO: Epoch 3 Train Loss: 0.7413 Val Loss: 0.7908
+2025-11-02 23:37:29,635 INFO: Saved best model to checkpoints/best_clipp.pth
+2025-11-02 23:37:29,636 INFO: Epoch 4/50
+2025-11-02 23:39:23,275 INFO: Saved loss plot to checkpoints/loss.png
+2025-11-02 23:39:23,275 INFO: Epoch 4 Train Loss: 0.5851 Val Loss: 0.7077
+2025-11-02 23:39:28,430 INFO: Saved best model to checkpoints/best_clipp.pth
+2025-11-02 23:39:28,430 INFO: Epoch 5/50
+2025-11-02 23:41:21,795 INFO: Saved loss plot to checkpoints/loss.png
+2025-11-02 23:41:21,795 INFO: Epoch 5 Train Loss: 0.4595 Val Loss: 0.6312
+2025-11-02 23:41:25,989 INFO: Saved best model to checkpoints/best_clipp.pth
+2025-11-02 23:41:25,990 INFO: Epoch 6/50
+2025-11-02 23:43:19,456 INFO: Saved loss plot to checkpoints/loss.png
+2025-11-02 23:43:19,456 INFO: Epoch 6 Train Loss: 0.3722 Val Loss: 0.5998
+2025-11-02 23:43:24,569 INFO: Saved best model to checkpoints/best_clipp.pth
+2025-11-02 23:43:24,569 INFO: Epoch 7/50
+2025-11-02 23:45:17,861 INFO: Saved loss plot to checkpoints/loss.png
+2025-11-02 23:45:17,862 INFO: Epoch 7 Train Loss: 0.3100 Val Loss: 0.5808
+2025-11-02 23:45:21,908 INFO: Saved best model to checkpoints/best_clipp.pth
+2025-11-02 23:45:21,908 INFO: Epoch 8/50
+2025-11-02 23:47:15,366 INFO: Saved loss plot to checkpoints/loss.png
+2025-11-02 23:47:15,366 INFO: Epoch 8 Train Loss: 0.2528 Val Loss: 0.5437
+2025-11-02 23:47:19,368 INFO: Saved best model to checkpoints/best_clipp.pth
+2025-11-02 23:47:19,369 INFO: Epoch 9/50
+2025-11-02 23:49:12,686 INFO: Saved loss plot to checkpoints/loss.png
+2025-11-02 23:49:12,686 INFO: Epoch 9 Train Loss: 0.2371 Val Loss: 0.5378
+2025-11-02 23:49:17,817 INFO: Saved best model to checkpoints/best_clipp.pth
+2025-11-02 23:49:17,818 INFO: Epoch 10/50
+2025-11-02 23:51:11,096 INFO: Saved loss plot to checkpoints/loss.png
+2025-11-02 23:51:11,096 INFO: Epoch 10 Train Loss: 0.1918 Val Loss: 0.5377
+2025-11-02 23:51:16,338 INFO: Saved best model to checkpoints/best_clipp.pth
+2025-11-02 23:51:16,338 INFO: Epoch 11/50
+2025-11-02 23:53:09,536 INFO: Saved loss plot to checkpoints/loss.png
+2025-11-02 23:53:09,536 INFO: Epoch 11 Train Loss: 0.1675 Val Loss: 0.5224
+2025-11-02 23:53:13,633 INFO: Saved best model to checkpoints/best_clipp.pth
+2025-11-02 23:53:13,634 INFO: Epoch 12/50
+2025-11-02 23:55:07,241 INFO: Saved loss plot to checkpoints/loss.png
+2025-11-02 23:55:07,242 INFO: Epoch 12 Train Loss: 0.1580 Val Loss: 0.5220
+2025-11-02 23:55:12,601 INFO: Saved best model to checkpoints/best_clipp.pth
+2025-11-02 23:55:12,602 INFO: Epoch 13/50
+2025-11-02 23:57:06,521 INFO: Saved loss plot to checkpoints/loss.png
+2025-11-02 23:57:06,521 INFO: Epoch 13 Train Loss: 0.1427 Val Loss: 0.4950
+2025-11-02 23:57:11,725 INFO: Saved best model to checkpoints/best_clipp.pth
+2025-11-02 23:57:11,726 INFO: Epoch 14/50
+2025-11-02 23:59:05,440 INFO: Saved loss plot to checkpoints/loss.png
+2025-11-02 23:59:05,441 INFO: Epoch 14 Train Loss: 0.1286 Val Loss: 0.5136
+2025-11-02 23:59:05,441 INFO: Epoch 15/50
+2025-11-03 00:00:59,079 INFO: Saved loss plot to checkpoints/loss.png
+2025-11-03 00:00:59,079 INFO: Epoch 15 Train Loss: 0.1195 Val Loss: 0.4818
+2025-11-03 00:01:03,721 INFO: Saved best model to checkpoints/best_clipp.pth
+2025-11-03 00:01:03,721 INFO: Epoch 16/50
+2025-11-03 00:02:57,529 INFO: Saved loss plot to checkpoints/loss.png
+2025-11-03 00:02:57,529 INFO: Epoch 16 Train Loss: 0.1098 Val Loss: 0.4592
+2025-11-03 00:03:03,046 INFO: Saved best model to checkpoints/best_clipp.pth
+2025-11-03 00:03:03,047 INFO: Epoch 17/50
+2025-11-03 00:04:56,833 INFO: Saved loss plot to checkpoints/loss.png
+2025-11-03 00:04:56,833 INFO: Epoch 17 Train Loss: 0.0947 Val Loss: 0.5335
+2025-11-03 00:04:56,833 INFO: Epoch 18/50
+2025-11-03 00:06:50,465 INFO: Saved loss plot to checkpoints/loss.png
+2025-11-03 00:06:50,466 INFO: Epoch 18 Train Loss: 0.0923 Val Loss: 0.5009
+2025-11-03 00:06:50,466 INFO: Epoch 19/50
+2025-11-03 00:08:44,463 INFO: Saved loss plot to checkpoints/loss.png
+2025-11-03 00:08:44,464 INFO: Epoch 19 Train Loss: 0.0832 Val Loss: 0.4775
+2025-11-03 00:08:44,464 INFO: Epoch 20/50
+2025-11-03 00:10:38,447 INFO: Saved loss plot to checkpoints/loss.png
+2025-11-03 00:10:38,447 INFO: Epoch 20 Train Loss: 0.0814 Val Loss: 0.4967
+2025-11-03 00:10:38,448 INFO: Epoch 21/50
+2025-11-03 00:12:32,737 INFO: Saved loss plot to checkpoints/loss.png
+2025-11-03 00:12:32,738 INFO: Epoch 21 Train Loss: 0.0733 Val Loss: 0.4887
+2025-11-03 00:12:32,738 INFO: Epoch 22/50
+2025-11-03 00:14:26,546 INFO: Saved loss plot to checkpoints/loss.png
+2025-11-03 00:14:26,546 INFO: Epoch 22 Train Loss: 0.0677 Val Loss: 0.4646
+2025-11-03 00:14:26,546 INFO: Epoch 23/50
+2025-11-03 00:16:20,860 INFO: Saved loss plot to checkpoints/loss.png
+2025-11-03 00:16:20,860 INFO: Epoch 23 Train Loss: 0.0718 Val Loss: 0.4670
+2025-11-03 00:16:20,860 INFO: Epoch 24/50
+2025-11-03 00:18:15,020 INFO: Saved loss plot to checkpoints/loss.png
+2025-11-03 00:18:15,020 INFO: Epoch 24 Train Loss: 0.0620 Val Loss: 0.4786
+2025-11-03 00:18:15,020 INFO: Epoch 25/50
+2025-11-03 00:20:08,838 INFO: Saved loss plot to checkpoints/loss.png
+2025-11-03 00:20:08,838 INFO: Epoch 25 Train Loss: 0.0555 Val Loss: 0.4567
+2025-11-03 00:20:14,493 INFO: Saved best model to checkpoints/best_clipp.pth
+2025-11-03 00:20:14,493 INFO: Epoch 26/50
+2025-11-03 00:22:08,175 INFO: Saved loss plot to checkpoints/loss.png
+2025-11-03 00:22:08,175 INFO: Epoch 26 Train Loss: 0.0515 Val Loss: 0.4961
+2025-11-03 00:22:08,175 INFO: Epoch 27/50
+2025-11-03 00:24:01,828 INFO: Saved loss plot to checkpoints/loss.png
+2025-11-03 00:24:01,829 INFO: Epoch 27 Train Loss: 0.0528 Val Loss: 0.4531
+2025-11-03 00:24:06,403 INFO: Saved best model to checkpoints/best_clipp.pth
+2025-11-03 00:24:06,403 INFO: Epoch 28/50
+2025-11-03 00:26:00,017 INFO: Saved loss plot to checkpoints/loss.png
+2025-11-03 00:26:00,018 INFO: Epoch 28 Train Loss: 0.0452 Val Loss: 0.4599
+2025-11-03 00:26:00,018 INFO: Epoch 29/50
+2025-11-03 00:27:53,444 INFO: Saved loss plot to checkpoints/loss.png
+2025-11-03 00:27:53,445 INFO: Epoch 29 Train Loss: 0.0472 Val Loss: 0.5264
+2025-11-03 00:27:53,445 INFO: Epoch 30/50
+2025-11-03 00:29:46,833 INFO: Saved loss plot to checkpoints/loss.png
+2025-11-03 00:29:46,833 INFO: Epoch 30 Train Loss: 0.0443 Val Loss: 0.4761
+2025-11-03 00:29:46,834 INFO: Epoch 31/50
+2025-11-03 00:31:40,239 INFO: Saved loss plot to checkpoints/loss.png
+2025-11-03 00:31:40,239 INFO: Epoch 31 Train Loss: 0.0441 Val Loss: 0.4861
+2025-11-03 00:31:40,240 INFO: Epoch 32/50
+2025-11-03 00:33:33,637 INFO: Saved loss plot to checkpoints/loss.png
+2025-11-03 00:33:33,637 INFO: Epoch 32 Train Loss: 0.0436 Val Loss: 0.4677
+2025-11-03 00:33:33,638 INFO: Epoch 33/50
+2025-11-03 00:35:27,355 INFO: Saved loss plot to checkpoints/loss.png
+2025-11-03 00:35:27,355 INFO: Epoch 33 Train Loss: 0.0399 Val Loss: 0.4949
+2025-11-03 00:35:27,355 INFO: Epoch 34/50
+2025-11-03 00:37:21,191 INFO: Saved loss plot to checkpoints/loss.png
+2025-11-03 00:37:21,191 INFO: Epoch 34 Train Loss: 0.0375 Val Loss: 0.4683
+2025-11-03 00:37:21,191 INFO: Epoch 35/50
+2025-11-03 00:39:14,954 INFO: Saved loss plot to checkpoints/loss.png
+2025-11-03 00:39:14,954 INFO: Epoch 35 Train Loss: 0.0322 Val Loss: 0.4561
+2025-11-03 00:39:14,954 INFO: Epoch 36/50
+2025-11-03 00:41:08,724 INFO: Saved loss plot to checkpoints/loss.png
+2025-11-03 00:41:08,724 INFO: Epoch 36 Train Loss: 0.0341 Val Loss: 0.5181
+2025-11-03 00:41:08,724 INFO: Epoch 37/50
+2025-11-03 00:43:02,462 INFO: Saved loss plot to checkpoints/loss.png
+2025-11-03 00:43:02,462 INFO: Epoch 37 Train Loss: 0.0331 Val Loss: 0.4754
+2025-11-03 00:43:02,462 INFO: Epoch 38/50
+2025-11-03 00:44:56,128 INFO: Saved loss plot to checkpoints/loss.png
+2025-11-03 00:44:56,129 INFO: Epoch 38 Train Loss: 0.0336 Val Loss: 0.4581
+2025-11-03 00:44:56,129 INFO: Epoch 39/50
+2025-11-03 00:46:49,816 INFO: Saved loss plot to checkpoints/loss.png
+2025-11-03 00:46:49,817 INFO: Epoch 39 Train Loss: 0.0329 Val Loss: 0.4935
+2025-11-03 00:46:49,817 INFO: Epoch 40/50
+2025-11-03 00:48:43,519 INFO: Saved loss plot to checkpoints/loss.png
+2025-11-03 00:48:43,519 INFO: Epoch 40 Train Loss: 0.0353 Val Loss: 0.4731
+2025-11-03 00:48:43,519 INFO: Epoch 41/50
+2025-11-03 00:50:37,424 INFO: Saved loss plot to checkpoints/loss.png
+2025-11-03 00:50:37,424 INFO: Epoch 41 Train Loss: 0.0301 Val Loss: 0.4704
+2025-11-03 00:50:37,424 INFO: Epoch 42/50
+2025-11-03 00:52:31,333 INFO: Saved loss plot to checkpoints/loss.png
+2025-11-03 00:52:31,334 INFO: Epoch 42 Train Loss: 0.0299 Val Loss: 0.4921
+2025-11-03 00:52:31,334 INFO: Epoch 43/50
+2025-11-03 00:54:25,165 INFO: Saved loss plot to checkpoints/loss.png
+2025-11-03 00:54:25,165 INFO: Epoch 43 Train Loss: 0.0288 Val Loss: 0.4718
+2025-11-03 00:54:25,165 INFO: Epoch 44/50
+2025-11-03 00:56:18,991 INFO: Saved loss plot to checkpoints/loss.png
+2025-11-03 00:56:18,991 INFO: Epoch 44 Train Loss: 0.0336 Val Loss: 0.4888
+2025-11-03 00:56:18,992 INFO: Epoch 45/50
+2025-11-03 00:58:12,716 INFO: Saved loss plot to checkpoints/loss.png
+2025-11-03 00:58:12,716 INFO: Epoch 45 Train Loss: 0.0317 Val Loss: 0.4835
+2025-11-03 00:58:12,717 INFO: Epoch 46/50
+2025-11-03 01:00:06,509 INFO: Saved loss plot to checkpoints/loss.png
+2025-11-03 01:00:06,510 INFO: Epoch 46 Train Loss: 0.0307 Val Loss: 0.4995
+2025-11-03 01:00:06,510 INFO: Epoch 47/50
+2025-11-03 01:02:00,429 INFO: Saved loss plot to checkpoints/loss.png
+2025-11-03 01:02:00,429 INFO: Epoch 47 Train Loss: 0.0267 Val Loss: 0.4884
+2025-11-03 01:02:00,429 INFO: Epoch 48/50
+2025-11-03 01:03:54,239 INFO: Saved loss plot to checkpoints/loss.png
+2025-11-03 01:03:54,239 INFO: Epoch 48 Train Loss: 0.0266 Val Loss: 0.4762
+2025-11-03 01:03:54,239 INFO: Epoch 49/50
+2025-11-03 01:05:47,999 INFO: Saved loss plot to checkpoints/loss.png
+2025-11-03 01:05:48,000 INFO: Epoch 49 Train Loss: 0.0239 Val Loss: 0.4845
+2025-11-03 01:05:48,000 INFO: Epoch 50/50
+2025-11-03 01:07:41,729 INFO: Saved loss plot to checkpoints/loss.png
+2025-11-03 01:07:41,730 INFO: Epoch 50 Train Loss: 0.0263 Val Loss: 0.4966
+2025-11-03 01:07:41,730 INFO: Training finished

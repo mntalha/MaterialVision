@@ -13,6 +13,7 @@ from pathlib import Path
 import argparse
 import logging
 import math
+import re
 
 import numpy as np
 import pandas as pd
@@ -75,12 +76,71 @@ VAL_TRANSFORMS = transforms.Compose([
     transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
 ])
 
+def parse_chemical_formula(formula):
+    """Parse a chemical formula into separated elements with counts.
+    
+    Args:
+        formula: Chemical formula string like "Fe2O3"
+        
+    Returns:
+        Formatted string like "2 Fe 3 O" or original formula if parsing fails
+    """
+    if not formula:
+        return ""
+    
+    try:
+        # Match element-count pairs: uppercase letter + optional lowercase + optional digits
+        pattern = r'([A-Z][a-z]?)(\d*)'
+        matches = re.findall(pattern, formula)
+        
+        if not matches:
+            return formula
+        
+        result_parts = []
+        for element, count in matches:
+            # If no count specified, it's implicitly 1
+            if not count:
+                count = "1"
+            result_parts.extend([count, element])
+        
+        return ' '.join(result_parts)
+    except Exception:
+        return formula
+
+
+def extract_formula_bandgap(text):
+    """Extract chemical formula and MBJ bandgap from a prompt text.
+
+    Returns a compact caption string like: "2 Fe 3 O 1.23" or the original text if parsing fails.
+    """
+    if not isinstance(text, str):
+        return str(text)
+    formula_match = re.search(r'The chemical formula is ([A-Za-z0-9]+)', text)
+    bandgap_match = re.search(r'mbj_bandgap value is ([0-9.]+)', text)
+    formula = formula_match.group(1) if formula_match else None
+    bandgap_str = bandgap_match.group(1) if bandgap_match else None
+    if bandgap_str:
+        try:
+            bandgap = float(bandgap_str.strip().rstrip('.'))
+        except Exception:
+            bandgap = None
+    else:
+        bandgap = None
+    if formula is None and bandgap is None:
+        return text
+    
+    # Parse the chemical formula to separate elements
+    parsed_formula = parse_chemical_formula(formula) if formula else ""
+    return f"{parsed_formula} {bandgap if bandgap is not None else ''}".strip()
+
 class ImageTextDataset(Dataset):
     """Dataset for image-text pairs."""
     def __init__(self, dataframe, tokenizer, train=True):
         self.df = dataframe.reset_index(drop=True)
         self.tokenizer = tokenizer
         self.train = train
+        self.captions = [extract_formula_bandgap(t) for t in self.df['input'].tolist()]
+        self.encoded = tokenizer(self.captions, padding='max_length', truncation=True, max_length=128)
 
     def __len__(self):
         return len(self.df)
@@ -92,21 +152,16 @@ class ImageTextDataset(Dataset):
         img = Image.fromarray(img_arr.astype(np.uint8)).convert('RGB')
         img = TRAIN_TRANSFORMS(img) if self.train else VAL_TRANSFORMS(img)
 
-        # Get text and tokenize
-        text = self.df.loc[idx, 'input']
-        encoded = self.tokenizer(
-            text,
-            padding='max_length',
-            truncation=True,
-            max_length=CFG.max_length,
-            return_tensors='pt'
-        )
+
+        # text tokens
+        input_ids = torch.tensor(self.encoded['input_ids'][idx], dtype=torch.long)
+        attention_mask = torch.tensor(self.encoded['attention_mask'][idx], dtype=torch.long)
 
         return {
             'image': img,
-            'input_ids': encoded['input_ids'].squeeze(),
-            'attention_mask': encoded['attention_mask'].squeeze(),
-            'caption': text
+            'input_ids': input_ids,
+            'attention_mask': attention_mask,
+            'caption': self.captions[idx]
         }
 
 class CLIPModel(nn.Module):

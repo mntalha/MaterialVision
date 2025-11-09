@@ -77,10 +77,42 @@ def list_to_image(img_list, size=224):
     return arr.reshape(side, side)
 
 
+def parse_chemical_formula(formula):
+    """Parse a chemical formula into separated elements with counts.
+    
+    Args:
+        formula: Chemical formula string like "Fe2O3"
+        
+    Returns:
+        Formatted string like "2 Fe 3 O" or original formula if parsing fails
+    """
+    if not formula:
+        return ""
+    
+    try:
+        # Match element-count pairs: uppercase letter + optional lowercase + optional digits
+        pattern = r'([A-Z][a-z]?)(\d*)'
+        matches = re.findall(pattern, formula)
+        
+        if not matches:
+            return formula
+        
+        result_parts = []
+        for element, count in matches:
+            # If no count specified, it's implicitly 1
+            if not count:
+                count = "1"
+            result_parts.extend([count, element])
+        
+        return ' '.join(result_parts)
+    except Exception:
+        return formula
+
+
 def extract_formula_bandgap(text):
     """Extract chemical formula and MBJ bandgap from a prompt text.
 
-    Returns a compact caption string like: "Fe2O3 1.23" or the original text if parsing fails.
+    Returns a compact caption string like: "2 Fe 3 O 1.23" or the original text if parsing fails.
     """
     if not isinstance(text, str):
         return str(text)
@@ -97,7 +129,10 @@ def extract_formula_bandgap(text):
         bandgap = None
     if formula is None and bandgap is None:
         return text
-    return f"{formula if formula else ''} {bandgap if bandgap is not None else ''}".strip()
+    
+    # Parse the chemical formula to separate elements
+    parsed_formula = parse_chemical_formula(formula) if formula else ""
+    return f"{parsed_formula} {bandgap if bandgap is not None else ''}".strip()
 
 
 # Image transforms
@@ -284,8 +319,6 @@ def main():
     val_loader = DataLoader(val_ds, batch_size=args.batch_size, shuffle=False, num_workers=4)
 
     model = CLIPP(proj_dim=args.proj_dim).to(device)
-
-    # debug instrumentation removed
 
     # Optionally freeze pretrained backbones and only train projection heads
     if args.freeze_backbones:

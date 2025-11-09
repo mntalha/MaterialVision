@@ -1,44 +1,155 @@
-"""Training script for BLIP image-text retrieval (Salesforce/blip-itm-large-coco).
-
-Usage example:
-python train_blip.py --train_csv ../../data/alpaca_mbj_bandgap_train.csv \
-    --val_csv ../../data/alpaca_mbj_bandgap_test.csv --epochs 10 --batch_size 32 --lr 1e-5 --save_dir checkpoints_blip
-
-python train_blip.py --train_csv ../../data/alpaca_mbj_bandgap_train.csv \
-    --val_csv ../../data/alpaca_mbj_bandgap_test.csv --epochs 10 --batch_size 16 --lr 1e-5 --save_dir checkpoints_blip --amp --accumulate_steps 2
-
-This script trains a retrieval-style contrastive objective between BLIP image and text encoders.
 """
-import argparse
+BLIP training script for image-text retrieval (Salesforce/blip-itm-large-coco).
+
+This file provides:
+- dataset parsing using existing `image` (JSON list) and `input` columns
+- BLIP dual-encoder model with projection heads for contrastive learning
+- training and validation loops with checkpointing and optional wandb logging
+- mixed precision training and gradient accumulation support
+
+Notes:
+- Ensure the CSV files contain an `image` column (JSON-serialized list/array) and an `input` text column.
+- Install dependencies: torch, transformers, pandas, numpy, tqdm, wandb (optional)
+
+Code Sample Usage:
+python train_blip.py \
+  --train_csv ../../data/alpaca_mbj_bandgap_train.csv \
+  --val_csv ../../data/alpaca_mbj_bandgap_test.csv \
+  --epochs 10 \
+  --batch_size 16 \
+  --lr 1e-5 \
+  --save_dir checkpoints_blip
+
+nohup python train_blip.py \
+  --train_csv ../../data/alpaca_mbj_bandgap_train.csv \
+  --val_csv ../../data/alpaca_mbj_bandgap_test.csv \
+  --epochs 10 \
+  --batch_size 16 \
+  --lr 1e-5 \
+  --save_dir checkpoints_blip \
+  --amp \
+  --accumulate_steps 2 &
+"""
+
+import json
+import re
+import os
 from pathlib import Path
+import argparse
 import logging
 import math
-import json
-from torch.nn.functional import normalize
+
 import numpy as np
+import pandas as pd
+from PIL import Image
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from torch.utils.data import Dataset, DataLoader
-from PIL import Image
-import pandas as pd
-from tqdm import tqdm
-from typing import Optional, Tuple
-from transformers import AutoProcessor, BlipForImageTextRetrieval
-import torch
-from torch import nn
-from typing import Optional, Tuple
-from torch.nn.functional import normalize
-
+from torch.utils.data import DataLoader, Dataset
 from torch.cuda.amp import autocast, GradScaler
 
 from transformers import AutoProcessor, BlipForImageTextRetrieval
+from tqdm import tqdm
+from typing import Optional, Tuple
 
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
+try:
+    import wandb
+    _HAS_WANDB = True
+except Exception:
+    _HAS_WANDB = False
+
+logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s: %(message)s")
+
+
+def list_to_image(img_list, size=224):
+    """Convert a JSON list (string or list) to a 2D image array.
+
+    Args:
+        img_list: JSON string or python list containing pixel values
+        size: output image side (image is reshaped to size x size)
+    """
+    if isinstance(img_list, str):
+        arr = np.array(json.loads(img_list))
+    else:
+        arr = np.array(img_list)
+    # If flattened length doesn't match, try flexible reshape
+    if arr.size == size * size:
+        return arr.reshape(size, size)
+    # if already shaped
+    if arr.ndim == 2 and arr.shape[0] == size and arr.shape[1] == size:
+        return arr
+    # fallback: attempt to reshape by inferring size
+    side = int(math.sqrt(arr.size))
+    return arr.reshape(side, side)
+
+
+def parse_chemical_formula(formula):
+    """Parse a chemical formula into separated elements with counts.
+    
+    Args:
+        formula: Chemical formula string like "Fe2O3"
+        
+    Returns:
+        Formatted string like "2 Fe 3 O" or original formula if parsing fails
+    """
+    if not formula:
+        return ""
+    
+    try:
+        # Match element-count pairs: uppercase letter + optional lowercase + optional digits
+        pattern = r'([A-Z][a-z]?)(\d*)'
+        matches = re.findall(pattern, formula)
+        
+        if not matches:
+            return formula
+        
+        result_parts = []
+        for element, count in matches:
+            # If no count specified, it's implicitly 1
+            if not count:
+                count = "1"
+            result_parts.extend([count, element])
+        
+        return ' '.join(result_parts)
+    except Exception:
+        return formula
+
+
+def extract_formula_bandgap(text):
+    """Extract chemical formula and MBJ bandgap from a prompt text.
+
+    Returns a compact caption string like: "2 Fe 3 O 1.23" or the original text if parsing fails.
+    """
+    if not isinstance(text, str):
+        return str(text)
+    formula_match = re.search(r'The chemical formula is ([A-Za-z0-9]+)', text)
+    bandgap_match = re.search(r'mbj_bandgap value is ([0-9.]+)', text)
+    formula = formula_match.group(1) if formula_match else None
+    bandgap_str = bandgap_match.group(1) if bandgap_match else None
+    if bandgap_str:
+        try:
+            bandgap = float(bandgap_str.strip().rstrip('.'))
+        except Exception:
+            bandgap = None
+    else:
+        bandgap = None
+    if formula is None and bandgap is None:
+        return text
+    
+    # Parse the chemical formula to separate elements
+    parsed_formula = parse_chemical_formula(formula) if formula else ""
+    return f"{parsed_formula} {bandgap if bandgap is not None else ''}".strip()
+
+
 class BlipForRetrieval(BlipForImageTextRetrieval):
+    """Extended BLIP model with helper methods for feature extraction."""
+    
     def get_text_features(self,
                           input_ids: torch.LongTensor,
                           attention_mask: Optional[torch.LongTensor] = None,
@@ -53,7 +164,7 @@ class BlipForRetrieval(BlipForImageTextRetrieval):
         )
         question_embeds = question_embeds[0] if not return_dict else question_embeds.last_hidden_state
 
-        text_feat = normalize(self.text_proj(question_embeds[:, 0, :]), dim=-1)
+        text_feat = F.normalize(self.text_proj(question_embeds[:, 0, :]), dim=-1)
 
         return text_feat
 
@@ -79,44 +190,49 @@ class BlipForRetrieval(BlipForImageTextRetrieval):
 
         image_embeds = vision_outputs[0]
 
-        image_feat = normalize(self.vision_proj(image_embeds[:, 0, :]), dim=-1)
+        image_feat = F.normalize(self.vision_proj(image_embeds[:, 0, :]), dim=-1)
 
         return image_feat
 
-logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s: %(message)s')
+class ImageTextDataset(Dataset):
+    """Dataset that returns preprocessed image tensor and tokenized text.
 
-def list_to_image(img_list, size=224):
+    Expects a dataframe with columns: `image` (JSON list or list-like) and `input` (text).
     """
-    Convert a list to a 2D image of given size.
-    """
-    return np.array(json.loads(img_list)).reshape(size, size)
-
-
-# Define a custom dataset
-class image_title_dataset():
-    def __init__(self, dataframe, processor):
-        # Tokenize text
-        self.text  = dataframe["input"]
-        self.dataframe = dataframe
+    def __init__(self, dataframe: pd.DataFrame, processor, train: bool = True, img_size: int = 224):
+        self.df = dataframe.reset_index(drop=True)
         self.processor = processor
+        self.train = train
+        self.img_size = img_size
+        # Precompute captions
+        self.captions = [extract_formula_bandgap(t) for t in self.df['input'].tolist()]
 
     def __len__(self):
-        return len(self.text)
+        return len(self.df)
 
     def __getitem__(self, idx):
-
-        # Preprocess image using CLIP's preprocessing function
-        image = list_to_image(self.dataframe["image"][idx])
-        image = Image.fromarray(image).convert("RGB") 
-        image = self.processor(image)['pixel_values'][0] # Preprocess the image
-        text_ = self.text[idx]
-        id = self.dataframe["id"][idx]
-        return image, text_, id
+        # image
+        img_json = self.df.loc[idx, 'image']
+        img_arr = list_to_image(img_json, size=self.img_size)
+        img = Image.fromarray(img_arr.astype(np.uint8)).convert('RGB')
+        
+        # Use BLIP processor for image preprocessing
+        processed = self.processor(images=img, return_tensors='pt')
+        pixel_values = processed['pixel_values'][0]
+        
+        # text - we'll tokenize in the training loop to maintain flexibility
+        caption = self.captions[idx]
+        
+        return {
+            'pixel_values': pixel_values,
+            'caption': caption,
+            'id': self.df.loc[idx, 'id'] if 'id' in self.df.columns else idx
+        }
 
 
 
 def contrastive_loss(img_emb, txt_emb, temperature=0.07):
+    """Compute bidirectional contrastive loss between image and text embeddings."""
     logits = img_emb @ txt_emb.t() / temperature
     labels = torch.arange(img_emb.size(0), device=img_emb.device)
     loss_i = F.cross_entropy(logits, labels)
@@ -125,25 +241,32 @@ def contrastive_loss(img_emb, txt_emb, temperature=0.07):
 
 
 def train_epoch(model, dataloader, optimizer, device, temperature, processor, scaler=None, accumulate_steps=1, clip_grad_norm=None):
+    """Run one training epoch with optional mixed precision and gradient accumulation.
+
+    Args:
+        model: BlipForRetrieval model
+        dataloader: DataLoader
+        optimizer: torch optimizer
+        device: torch.device
+        temperature: float for contrastive loss
+        processor: AutoProcessor for text tokenization
+        scaler: GradScaler for mixed precision (optional)
+        accumulate_steps: int for gradient accumulation
+        clip_grad_norm: float or None for gradient clipping
+    """
     model.train()
     total_loss = 0.0
     steps = 0
     optimizer.zero_grad()
-    for batch in tqdm(dataloader, desc='Train'):
-        # Support two batch formats:
-        # 1) dict with keys 'pixel_values', 'input_ids', 'attention_mask'
-        # 2) tuple/list like (image_tensor, list_of_texts, ids_tensor)
-        if isinstance(batch, dict):
-            pixel_values = batch['pixel_values'].to(device)
-            input_ids = batch['input_ids'].to(device)
-            attention_mask = batch['attention_mask'].to(device)
-        else:
-            # default collate yields: (images_tensor, list_of_texts, ids_tensor)
-            pixel_values = batch[0].to(device)
-            texts = batch[1]
-            txts = processor(text=list(texts), padding=True, return_tensors='pt').to(device)
-            input_ids = txts['input_ids']
-            attention_mask = txts['attention_mask']
+    
+    for batch_idx, batch in enumerate(tqdm(dataloader, desc='Train')):
+        pixel_values = batch['pixel_values'].to(device)
+        captions = batch['caption']
+        
+        # Tokenize text
+        txts = processor(text=list(captions), padding=True, return_tensors='pt').to(device)
+        input_ids = txts['input_ids']
+        attention_mask = txts['attention_mask']
 
         # get normalized features
         if scaler is not None:
@@ -161,7 +284,7 @@ def train_epoch(model, dataloader, optimizer, device, temperature, processor, sc
             loss = contrastive_loss(img_norm, txt_norm, temperature)
 
         if not torch.isfinite(loss):
-            logger.warning('Non-finite loss encountered, skipping step')
+            logger.warning(f'Non-finite loss at batch {batch_idx} (loss={loss}). Skipping step.')
             continue
 
         # gradient accumulation: scale loss to keep effective lr stable
@@ -187,28 +310,25 @@ def train_epoch(model, dataloader, optimizer, device, temperature, processor, sc
             optimizer.zero_grad()
 
         total_loss += loss.item() * accumulate_steps
+    
     # average over true number of optimizer steps
     num_steps = max(1, math.ceil(len(dataloader) / accumulate_steps))
-    return total_loss / (num_steps)
+    return total_loss / num_steps
 
 
-def validate(model, dataloader, device, temperature, processor=None, amp=False):
+def validate(model, dataloader, device, temperature, processor, amp=False):
+    """Run validation epoch."""
     model.eval()
     total_loss = 0.0
     with torch.no_grad():
         for batch in tqdm(dataloader, desc='Valid'):
-            if isinstance(batch, dict):
-                pixel_values = batch['pixel_values'].to(device)
-                input_ids = batch['input_ids'].to(device)
-                attention_mask = batch['attention_mask'].to(device)
-            else:
-                pixel_values = batch[0].to(device)
-                texts = batch[1]
-                if processor is None:
-                    raise RuntimeError('processor is required to tokenize validation texts when using tuple batches')
-                txts = processor(text=list(texts), padding=True, return_tensors='pt').to(device)
-                input_ids = txts['input_ids']
-                attention_mask = txts['attention_mask']
+            pixel_values = batch['pixel_values'].to(device)
+            captions = batch['caption']
+            
+            # Tokenize text
+            txts = processor(text=list(captions), padding=True, return_tensors='pt').to(device)
+            input_ids = txts['input_ids']
+            attention_mask = txts['attention_mask']
 
             if amp:
                 with autocast():
@@ -229,25 +349,27 @@ def validate(model, dataloader, device, temperature, processor=None, amp=False):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--train_csv', type=str, required=True)
-    parser.add_argument('--val_csv', type=str, required=True)
-    parser.add_argument('--epochs', type=int, default=10)
-    parser.add_argument('--batch_size', type=int, default=32)
-    parser.add_argument('--lr', type=float, default=1e-5)
+    parser.add_argument('--train_csv', type=str, default='../../data/alpaca_mbj_bandgap_train.csv')
+    parser.add_argument('--val_csv', type=str, default='../../data/alpaca_mbj_bandgap_test.csv')
+    parser.add_argument('--epochs', type=int, default=50)
+    parser.add_argument('--batch_size', type=int, default=16)
+    parser.add_argument('--lr', type=float, default=2e-5)
     parser.add_argument('--proj_dim', type=int, default=256)
     parser.add_argument('--temperature', type=float, default=0.07)
     parser.add_argument('--save_dir', type=str, default='checkpoints_blip')
-    parser.add_argument('--clip_grad_norm', type=float, default=1.0)
-    parser.add_argument('--freeze_backbones', action='store_true')
+    parser.add_argument('--clip_grad_norm', type=float, default=1.0, help='Max norm for gradient clipping (0 or None to disable)')
+    parser.add_argument('--freeze_backbones', action='store_true', help='Freeze vision and text encoders and only train projection heads')
     parser.add_argument('--no_wandb', action='store_true')
     parser.add_argument('--amp', action='store_true', help='Use automatic mixed precision')
     parser.add_argument('--accumulate_steps', type=int, default=1, help='Gradient accumulation steps')
     args = parser.parse_args()
 
+    # Prepare logging and device
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     logger.info(f'Using device: {device}')
 
-
+    if _HAS_WANDB and not args.no_wandb:
+        wandb.init(project='materialvision-blip', config=vars(args))
 
     # Load processor and pretrained model
     processor = AutoProcessor.from_pretrained('Salesforce/blip-itm-large-coco')
@@ -259,62 +381,69 @@ def main():
     train_df = pd.read_csv(args.train_csv)
     val_df = pd.read_csv(args.val_csv)
 
-    # The repository contains `image_title_dataset` which returns (image_tensor, text, id)
-    # that is already preprocessed via the processor. Use that to match your existing dataset code.
-    train_ds = image_title_dataset(train_df, processor)
-    val_ds = image_title_dataset(val_df, processor)
+    # Create datasets using the improved dataset class
+    train_ds = ImageTextDataset(train_df, processor, train=True)
+    val_ds = ImageTextDataset(val_df, processor, train=False)
 
-    # Use default collate so batches are tuples: (images_tensor, list_texts, ids_tensor)
+    # Use default collate for dict-based batches
     train_loader = DataLoader(train_ds, batch_size=args.batch_size, shuffle=True, num_workers=4)
     val_loader = DataLoader(val_ds, batch_size=args.batch_size, shuffle=False, num_workers=4)
 
-    # Optionally freeze backbones
+    # Optionally freeze backbones and only train projection heads
     if args.freeze_backbones:
-        for p in model.parameters():
-            p.requires_grad = False
-        # keep projection layers trainable if they exist
-        for n, p in model.named_parameters():
-            if 'vision_proj' in n or 'text_proj' in n or 'cls' in n or 'proj' in n:
-                p.requires_grad = True
+        logger.info('Freezing vision and text encoder parameters. Only projection heads will be trained.')
+        for param in model.vision_model.parameters():
+            param.requires_grad = False
+        for param in model.text_encoder.parameters():
+            param.requires_grad = False
 
-    trainable = [p for p in model.parameters() if p.requires_grad]
-    optimizer = torch.optim.AdamW(trainable, lr=args.lr)
+    # Create optimizer only for trainable parameters
+    trainable_params = [p for p in model.parameters() if p.requires_grad]
+    if len(trainable_params) == 0:
+        logger.warning('No trainable parameters found (all parameters frozen). Creating optimizer for all parameters instead.')
+        trainable_params = model.parameters()
+
+    optimizer = torch.optim.AdamW(trainable_params, lr=args.lr)
 
     scaler = GradScaler() if args.amp else None
 
     save_dir = Path(args.save_dir)
     save_dir.mkdir(parents=True, exist_ok=True)
 
-        # --- Logging to file ---
+    # Configure file logging inside the save directory so logs are colocated with checkpoints
     log_file = save_dir / 'train.log'
     try:
         fh = logging.FileHandler(str(log_file))
         fh.setLevel(logging.INFO)
         fh.setFormatter(logging.Formatter("%(asctime)s %(levelname)s: %(message)s"))
-        if str(log_file) not in [getattr(h, 'baseFilename', None) for h in logger.handlers]:
+        # Avoid adding duplicate file handlers
+        existing_filenames = [getattr(h, 'baseFilename', None) for h in logger.handlers]
+        if str(log_file) not in existing_filenames:
             logger.addHandler(fh)
         logger.info(f'Logging to {log_file}')
     except Exception as e:
         logger.warning(f'Could not create file handler for logging at {log_file}: {e}')
 
     best_val = float('inf')
-    train_loss_history, val_loss_history = [], []
-
+    train_loss_history = []
+    val_loss_history = []
+    
     for epoch in range(1, args.epochs + 1):
         logger.info(f'===== Epoch {epoch}/{args.epochs} =====')
         train_loss = train_epoch(model, train_loader, optimizer, device, args.temperature, processor,
-                                 scaler=scaler, accumulate_steps=args.accumulate_steps, clip_grad_norm=args.clip_grad_norm)
+                                 scaler=scaler, accumulate_steps=args.accumulate_steps, 
+                                 clip_grad_norm=(args.clip_grad_norm if args.clip_grad_norm > 0 else None))
         val_loss = validate(model, val_loader, device, args.temperature, processor=processor, amp=args.amp)
 
+        # record histories
         train_loss_history.append(train_loss)
         val_loss_history.append(val_loss)
-        logger.info(f'Epoch {epoch}: train_loss={train_loss:.4f}, val_loss={val_loss:.4f}')
 
-        # Save loss plot
+        # plot and save loss curves into checkpoints directory
         try:
             plt.figure(figsize=(8, 5))
-            plt.plot(range(1, len(train_loss_history)+1), train_loss_history, label='Train Loss')
-            plt.plot(range(1, len(val_loss_history)+1), val_loss_history, label='Val Loss')
+            plt.plot(range(1, len(train_loss_history) + 1), train_loss_history, label='Train Loss')
+            plt.plot(range(1, len(val_loss_history) + 1), val_loss_history, label='Val Loss')
             plt.xlabel('Epoch')
             plt.ylabel('Loss')
             plt.title('Training and Validation Loss')
@@ -328,6 +457,11 @@ def main():
         except Exception as e:
             logger.warning(f'Could not save loss plot: {e}')
 
+        logger.info(f'Epoch {epoch}: train_loss={train_loss:.4f}, val_loss={val_loss:.4f}')
+        
+        if _HAS_WANDB and not args.no_wandb:
+            wandb.log({'train_loss': train_loss, 'val_loss': val_loss, 'epoch': epoch})
+
         # Save best checkpoint
         if val_loss < best_val:
             best_val = val_loss
@@ -340,6 +474,7 @@ def main():
             }, ckpt_path)
             logger.info(f'Saved new best checkpoint to {ckpt_path}')
 
+    logger.info('Training finished')
 
 if __name__ == '__main__':
     main()
