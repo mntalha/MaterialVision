@@ -142,6 +142,17 @@ class ImageTextDataset(Dataset):
         self.captions = [extract_formula_bandgap(t) for t in self.df['input'].tolist()]
         self.encoded = tokenizer(self.captions, padding='max_length', truncation=True, max_length=128)
 
+    def prepare_caption(self, text):
+        caption = extract_formula_bandgap(text)
+        encoded = self.tokenizer(caption, return_tensors='pt', padding='max_length', truncation=True, max_length=77)
+        input_ids, attention_mask = torch.tensor(encoded['input_ids']), torch.tensor(encoded['attention_mask'])
+        return caption, input_ids, attention_mask
+    
+    def prepare_image(self, path):
+        img = Image.open(path).convert('RGB')
+        img = VAL_TRANSFORMS(img)
+        return img
+     
     def __len__(self):
         return len(self.df)
 

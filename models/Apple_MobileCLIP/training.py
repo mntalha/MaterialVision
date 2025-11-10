@@ -151,6 +151,16 @@ class ImageTextDataset(Dataset):
         # Precompute captions
         self.captions = [extract_formula_bandgap(t) for t in self.df['input'].tolist()]
 
+    def prepare_caption(self, text):
+        caption = extract_formula_bandgap(text)
+        text_tokens = self.tokenizer(caption)# return_tensors='pt', padding='max_length', truncation=True, max_length=77)
+        return caption, text_tokens
+    
+    def prepare_image(self, path):
+        img = Image.open(path).convert('RGB')
+        img = self.preprocess(img)
+        return img
+     
     def __len__(self):
         return len(self.df)
 

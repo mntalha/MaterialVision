@@ -166,6 +166,18 @@ class ImageTextDataset(Dataset):
         # Tokenize (we will convert to tensors in __getitem__ to keep Dataset picklable)
         self.encoded = tokenizer(self.captions, padding='max_length', truncation=True, max_length=128)
 
+    def prepare_caption(self, text):
+        caption = extract_formula_bandgap(text)
+        encoded = self.tokenizer(caption, padding='max_length', truncation=True, max_length=128)
+        input_ids = torch.tensor(encoded['input_ids'], dtype=torch.long)
+        attention_mask = torch.tensor(encoded['attention_mask'], dtype=torch.long)
+        return caption, input_ids, attention_mask
+    
+    def prepare_image(self, path):
+        img = Image.open(path).convert('RGB')
+        img = VAL_TRANSFORMS(img)
+        return img
+
     def __len__(self):
         return len(self.df)
 

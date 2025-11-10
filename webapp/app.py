@@ -25,24 +25,71 @@ device = "cuda" if torch.cuda.is_available() else "cpu"
 MODEL_PATHS = {
     'CLIPP-SciBERT': '../models/CLIPP_allenai/checkpoints/best_clipp.pth',
     'CLIPP-DistilBERT': '../models/CLIPP_bert/checkpoints/best_clipp_bert.pth',
-    'MobileCLIP': '../models/Apple_MobileCLIP/checkpoints/best_mobileclip.pth',
-    'BLIP': '../models/Apple_MobileCLIP/checkpoints/best_clipp_apple.pth'
+    'Salesforce': '../models/Salesforce/checkpoints_blip/best_blip.pth',
+    'Apple': '../models/Apple_MobileCLIP/checkpoints/best_clipp_apple.pth'
 }
-
 
 def list_to_image(img_list, size=224):
     """Convert a JSON list to a 2D image."""
     return np.array(json.loads(img_list)).reshape(size, size)
 
+import re
+def parse_chemical_formula(formula):
+    """Parse a chemical formula into separated elements with counts.
+    
+    Args:
+        formula: Chemical formula string like "Fe2O3"
+        
+    Returns:
+        Formatted string like "2 Fe 3 O" or original formula if parsing fails
+    """
+    if not formula:
+        return ""
+    
+    try:
+        # Match element-count pairs: uppercase letter + optional lowercase + optional digits
+        pattern = r'([A-Z][a-z]?)(\d*)'
+        matches = re.findall(pattern, formula)
+        
+        if not matches:
+            return formula
+        
+        result_parts = []
+        for element, count in matches:
+            # If no count specified, it's implicitly 1
+            if not count:
+                count = "1"
+            result_parts.extend([count, element])
+        
+        return ' '.join(result_parts)
+    except Exception:
+        return formula
+
+
 def extract_formula_bandgap(text):
-    import re
+    """Extract chemical formula and MBJ bandgap from a prompt text.
+
+    Returns a compact caption string like: "2 Fe 3 O 1.23" or the original text if parsing fails.
+    """
+    if not isinstance(text, str):
+        return str(text)
     formula_match = re.search(r'The chemical formula is ([A-Za-z0-9]+)', text)
     bandgap_match = re.search(r'mbj_bandgap value is ([0-9.]+)', text)
     formula = formula_match.group(1) if formula_match else None
-    bandgap_str = bandgap_match.group(1).rstrip('.') if bandgap_match else None  # strip trailing dot
-    bandgap = float(bandgap_str) if bandgap_str else None 
-    return formula, bandgap
-
+    bandgap_str = bandgap_match.group(1) if bandgap_match else None
+    if bandgap_str:
+        try:
+            bandgap = float(bandgap_str.strip().rstrip('.'))
+        except Exception:
+            bandgap = None
+    else:
+        bandgap = None
+    if formula is None and bandgap is None:
+        return text
+    
+    # Parse the chemical formula to separate elements
+    parsed_formula = parse_chemical_formula(formula) if formula else ""
+    return f"{parsed_formula} {bandgap if bandgap is not None else ''}".strip()
 
 
 # --- Dataset class ---
@@ -97,10 +144,12 @@ def load_selected_model(model_name):
         model, processor = load_clipp_scibert(checkpoint_path, device)
     elif model_name == 'CLIPP-DistilBERT':
         model, processor = load_clipp_distilbert(checkpoint_path, device)
-    elif model_name == 'MobileCLIP':
+    elif model_name == 'Apple':
         model, processor = load_mobileclip(checkpoint_path, device)
-    else:  # BLIP
+    elif model_name == 'Salesforce':
         model, processor = load_blip(checkpoint_path, device)
+    else:
+        raise ValueError(f"Unknown model: {model_name}")
     
     return model, processor
 
@@ -239,7 +288,7 @@ st.title("🔍 Materials Science Retrieval App")
 # Model selection
 model_name = st.selectbox(
     "Select Model",
-    ["CLIPP-SciBERT", "CLIPP-DistilBERT", "MobileCLIP", "BLIP"],
+    ["CLIPP-SciBERT", "CLIPP-DistilBERT", "Apple", "Salesforce"],
     help="Choose the model to use for retrieval"
 )
 
