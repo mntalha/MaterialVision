@@ -209,7 +209,7 @@ class ImageTextDataset(Dataset):
 
     def prepare_caption(self, text):
         caption = extract_formula_bandgap(text)
-        txts = self.processor(text=list(caption), padding=True, return_tensors='pt')
+        txts = self.processor(text=caption, return_tensors='pt')
         input_ids = txts['input_ids']
         attention_mask = txts['attention_mask']
         return caption, input_ids, attention_mask

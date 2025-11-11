@@ -6,11 +6,16 @@
     "configurations": [
 
         {
-            "name": "Python Debugger: Current File",
+            "name": "Streamlit: Run app.py",
             "type": "debugpy",
             "request": "launch",
-            "program": "${file}",
+            "module": "streamlit",
+            "args": [
+                "run",
+                "app.py"
+            ],
             "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}/webapp",
             "python": "/home/jipengsun/.conda/envs/clipp/bin/python"
         }
     ]

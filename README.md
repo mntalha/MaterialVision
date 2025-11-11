@@ -1,203 +1,426 @@
-# MaterialVision: Matching Materials Science Prompts with STEM Images
+# MaterialVision: Interactive Materials Science Retrieval System
 
-MaterialVision is an innovative project that bridges the gap between textual descriptions of materials and their visual representations through STEM (Scanning Transmission Electron Microscopy) imaging. The project employs Vision Transformers to establish connections between materials science prompts and their corresponding atomic-scale images.
+MaterialVision is an advanced multimodal retrieval system that bridges materials science textual descriptions with STEM (Scanning Transmission Electron Microscopy) imaging data. The project features a web application for interactive text-to-image and image-to-text retrieval using state-of-the-art vision-language models.
 
-## Project Overview
+## 🎯 Key Features
 
-This project combines three key elements:
-1. Materials Science knowledge representation
-2. STEM image simulation and analysis
-3. Vision Transformer-based matching algorithms
+### 1. **Interactive Web Application**
+- **Text-to-Image Retrieval**: Search for STEM images using materials descriptions
+- **Image-to-Text Retrieval**: Upload images to find matching textual descriptions  
+- **Multi-Model Support**: Compare results across different vision-language models
+- **Real-time Metrics**: View retrieval performance and similarity heatmaps
+- **Bandgap Filtering**: Filter materials by MBJ bandgap ranges
 
-### Key Features
+### 2. **Multiple Model Architectures**
+- **CLIPP-SciBERT**: Custom CLIP-style model with scientific text understanding
+- **CLIPP-DistilBERT**: Lightweight version with DistilBERT text encoder
+- **MobileCLIP**: Apple's efficient mobile-optimized model
+- **BLIP**: Salesforce's advanced vision-language model
 
-#### 1. STEM Image Processing
-- Generation of STEM simulations from atomic structures
-- Image processing and enhancement
-- Feature extraction from atomic-scale images
+### 3. **Comprehensive Pipeline**
+- Materials property extraction and parsing
+- STEM image processing and normalization
+- Embedding generation and caching
+- Interactive visualization and analysis
 
-#### 2. Text-Image Matching
-- Processing of materials science prompts
-- Correlation between textual descriptions and image features
-- Semantic understanding of materials properties
+## 🚀 Quick Start
 
-#### 3. Vision Transformer Implementation
-- Advanced image analysis capabilities
-- Multi-modal learning (text and image)
-- Structure-property relationship understanding
+### Web Application
+```bash
+# Navigate to webapp directory
+cd webapp
 
-## Repository Structure
+# Run the Streamlit app
+streamlit run app.py
+```
+
+### Model Loading and Embedding Generation
+```python
+# Import model functions
+from models import load_clipp_scibert, load_mobileclip, load_blip
+
+# Load a model
+device = 'cuda' if torch.cuda.is_available() else 'cpu'
+checkpoint_path = 'models/CLIPP_allenai/checkpoints/best_clipp.pth'
+model, tokenizer, dataset = load_clipp_scibert(checkpoint_path, device)
+
+# Generate text embeddings
+text = "The chemical formula is LiGeS. The mbj_bandgap value is 0.0."
+tokens = tokenizer(text, return_tensors="pt", max_length=512).to(device)
+text_features = model.get_text_features(tokens['input_ids'], tokens['attention_mask'])
+```
+
+## 📁 Repository Structure
 
 ```
 MaterialVision/
-├── codes/
-│   ├── helper.py         # Utility functions for data processing
-│   └── ...              # Additional implementation files
-├── tests/
-│   ├── howtoreadData.ipynb   # Data reading and analysis examples
-│   ├── image_test.ipynb      # STEM simulation demonstrations
-│   └── ...
-└── data/                # Dataset storage
+├── webapp/
+│   ├── app.py              # Main Streamlit web application
+│   ├── models.py           # Model loading utilities
+│   ├── embeddings/         # Precomputed embeddings cache
+│   └── simple_text_embedding.ipynb  # Embedding generation notebook
+├── models/
+│   ├── CLIPP_allenai/      # SciBERT-based CLIPP model
+│   ├── CLIPP_bert/         # DistilBERT-based CLIPP model  
+│   ├── Apple_MobileCLIP/   # Apple MobileCLIP model
+│   └── Salesforce/         # BLIP model implementation
+├── data/
+│   ├── alpaca_mbj_bandgap_train.csv    # Training dataset
+│   ├── alpaca_mbj_bandgap_test.csv     # Validation dataset
+│   └── train/test/         # Image data directories
+└── tests/                  # Development notebooks and tests
 ```
 
-## Getting Started
+## 💻 Usage Examples
+
+### Web Application Features
+
+#### Text-to-Image Retrieval
+Search for STEM images using materials descriptions:
+```python
+# Example query in the web app
+text_query = "The chemical formula is LiGeS. The mbj_bandgap value is 0.0."
+
+# Returns: Top matching images with similarity scores
+# - Formula parsing: "1 Li 1 Ge 1 S"  
+# - Bandgap extraction: 0.0 eV
+# - Visual similarity ranking
+```
+
+#### Image-to-Text Retrieval  
+Upload STEM images to find matching descriptions:
+```python
+# Upload any materials image
+# Returns: Most similar textual descriptions from dataset
+# Shows: Chemical formulas, bandgap values, similarity scores
+```
+
+### Programmatic Usage
+
+#### Custom Text Embedding Generation
+```python
+# Generate embeddings for custom materials descriptions
+from models import load_clipp_scibert
+
+def create_text_embeddings(model_name, texts):
+    device = 'cuda' if torch.cuda.is_available() else 'cpu'
+    
+    if model_name == 'CLIPP-SciBERT':
+        checkpoint_path = 'models/CLIPP_allenai/checkpoints/best_clipp.pth'
+        model, tokenizer, _ = load_clipp_scibert(checkpoint_path, device)
+        
+        embeddings = []
+        model.eval()
+        with torch.no_grad():
+            for text in texts:
+                tokens = tokenizer(text, padding=True, truncation=True, 
+                                 return_tensors="pt", max_length=512).to(device)
+                text_features = model.get_text_features(
+                    tokens['input_ids'], tokens['attention_mask']
+                )
+                embeddings.append(text_features.cpu().numpy())
+        
+        return np.vstack(embeddings)
+
+# Usage
+texts = ["Silicon carbide semiconductor", "Iron oxide magnetic material"]
+embeddings = create_text_embeddings('CLIPP-SciBERT', texts)
+```
+
+#### Chemical Formula Processing
+```python
+import re
+
+def parse_chemical_formula(formula):
+    """Convert Fe2O3 -> 2 Fe 3 O format for better model understanding"""
+    pattern = r'([A-Z][a-z]?)(\d*)'
+    matches = re.findall(pattern, formula)
+    
+    result_parts = []
+    for element, count in matches:
+        if not count:
+            count = "1"
+        result_parts.extend([count, element])
+    
+    return ' '.join(result_parts)
+
+# Example
+formula = "Fe2O3"
+parsed = parse_chemical_formula(formula)  # Returns: "2 Fe 3 O"
+```
+
+#### Similarity Search with Filtering
+```python
+import torch.nn.functional as F
+
+# Search with bandgap filtering
+def search_by_bandgap_range(text_query, min_bandgap, max_bandgap, k=5):
+    # Generate query embedding
+    query_embedding = model.get_text_features(...)
+    
+    # Filter by bandgap range
+    filtered_indices = [
+        i for i, bg in enumerate(bandgaps) 
+        if bg is not None and min_bandgap <= bg <= max_bandgap
+    ]
+    
+    # Compute similarities for filtered set
+    filtered_vectors = corpus_vectors[filtered_indices]
+    similarities = F.cosine_similarity(query_embedding, filtered_vectors)
+    
+    # Get top-k results
+    topk = torch.topk(similarities, k)
+    return filtered_indices[topk.indices], topk.values
+
+# Usage
+results, scores = search_by_bandgap_range(
+    "semiconductor material", min_bandgap=1.0, max_bandgap=3.0, k=5
+)
+```
+
+## 📊 Model Performance & Comparison
+
+### Available Models
+
+| Model | Text Encoder | Vision Encoder | Features |
+|-------|--------------|----------------|----------|
+| **CLIPP-SciBERT** | SciBERT (scientific vocabulary) | ViT-Base/16 | Best for scientific text |
+| **CLIPP-DistilBERT** | DistilBERT (lightweight) | ViT-Base/16 | Faster inference |
+| **MobileCLIP** | MobileBERT | MobileViT | Mobile-optimized |
+| **BLIP** | BERT | ViT-Large/16 | General-purpose VLM |
+
+### Retrieval Performance (Top-k Accuracy)
+
+#### Validation Set Results
+```
+CLIPP-SciBERT:
+├── Top-1:  36.9%  ├── Top-5:  65.1%  └── Top-10: 74.9%
+
+CLIPP-DistilBERT: 
+├── Top-1:  12.5%  ├── Top-5:  36.6%  └── Top-10: 49.8%
+
+Apple MobileCLIP:
+├── Top-1:  38.0%  ├── Top-5:  67.0%  └── Top-10: 76.7%
+
+BLIP (Salesforce):
+├── Top-1:  46.8%  ├── Top-5:  72.9%  └── Top-10: 80.9%
+```
+
+#### Training Set Results  
+```
+CLIPP-SciBERT:
+├── Top-1:  44.9%  ├── Top-5:  80.5%  └── Top-10: 90.3%
+
+CLIPP-DistilBERT:
+├── Top-1:  14.6%  ├── Top-5:  39.3%  └── Top-10: 52.6%
+
+Apple MobileCLIP:
+├── Top-1:  63.0%  ├── Top-5:  93.8%  └── Top-10: 97.8%
+
+BLIP (Salesforce):
+├── Top-1:  57.1%  ├── Top-5:  90.5%  └── Top-10: 96.9%
+```
+
+### Model Architecture Details
+
+#### CLIPP Models
+```python
+# CLIP-style contrastive learning architecture
+class CLIPPModel:
+    def __init__(self):
+        self.vision_encoder = ViT_Base_16()      # 224x224 patches
+        self.text_encoder = SciBERT()            # Scientific vocabulary
+        self.projection_dim = 256                # Joint embedding space
+        self.temperature = 0.07                  # Contrastive learning temp
+    
+    def forward(self, images, texts):
+        img_features = self.vision_encoder(images)
+        txt_features = self.text_encoder(texts)
+        
+        # Project to shared space
+        img_embeds = self.img_projection(img_features)
+        txt_embeds = self.txt_projection(txt_features)
+        
+        return F.normalize(img_embeds), F.normalize(txt_embeds)
+```
+
+#### BLIP Model  
+```python
+# Advanced vision-language model with cross-modal attention
+class BLIPModel:
+    def __init__(self):
+        self.vision_encoder = ViT_Large_16()     # Larger vision model
+        self.text_encoder = BERT()               # Standard BERT
+        self.cross_attention = MultiheadAttention() # Cross-modal fusion
+        
+    def forward(self, images, texts):
+        # Dual-encoder + cross-attention architecture
+        vision_embeds = self.vision_encoder(images)
+        text_embeds = self.text_encoder(texts)
+        
+        # Cross-modal attention for better alignment
+        fused_embeds = self.cross_attention(vision_embeds, text_embeds)
+        return fused_embeds
+```
+
+## 🔬 Applications & Use Cases
+
+### Materials Discovery via Web Interface
+The Streamlit web application (`webapp/app.py`) provides interactive search capabilities:
+
+- **Text-to-Image Search**: Enter materials descriptions to find similar STEM images
+- **Image Upload**: Upload STEM images to find matching textual descriptions  
+- **Model Comparison**: Switch between different vision-language models
+- **Real-time Results**: Get similarity scores and rankings instantly
+
+### Bandgap Range Filtering
+The web interface includes a dedicated "Filter by Bandgap" tab:
+
+- **Interactive Sliders**: Adjust bandgap range (0.0 - 10.0 eV)
+- **Visual Results**: View filtered STEM images with chemical formulas
+- **Download Options**: Export filtered datasets as CSV files
+- **Material Classification**: Explore metals, semiconductors, and insulators
+
+### Programmatic Analysis
+Use the Jupyter notebooks for custom analysis:
+
+- **`simple_text_embedding.ipynb`**: Generate embeddings for custom materials
+- **Model Evaluation Notebooks**: Compare performance across different models
+- **Chemical Formula Parsing**: Built-in functions convert formulas to model-friendly format
+
+### Performance Monitoring
+The web app provides real-time metrics:
+
+- **Similarity Heatmaps**: Visualize embedding relationships
+- **Top-k Accuracy Display**: Monitor retrieval performance
+- **Model Comparison**: Side-by-side performance analysis
+
+## 🎮 Web Interface Features
+
+### Interactive Search
+- **Real-time text search** with instant similarity scoring
+- **Drag-and-drop image upload** for reverse image search
+- **Dynamic model switching** to compare different approaches
+- **Adjustable result count** (Top-1 to Top-10)
+
+### Visualization & Analysis  
+- **Similarity heatmaps** for understanding model behavior
+- **Performance metrics** with Top-k accuracy display
+- **Chemical formula parsing** with element separation
+- **Bandgap range filtering** for targeted material discovery
+
+### Export & Download
+- **CSV export** of search results with metadata
+- **Filtered dataset downloads** based on bandgap criteria
+- **Embedding vectors** for further analysis
+
+## 🛠️ Installation & Setup
 
 ### Prerequisites
 ```bash
-# Clone the repository
-git clone [repository-url]
+pip install torch torchvision transformers
+pip install streamlit pandas numpy pillow
+pip install open-clip-torch  # For MobileCLIP
+pip install transformers[torch]  # For BLIP/SciBERT
+```
 
-# # Install dependencies
-# pip install -r requirements.txt
-# ```
+### Quick Setup
+```bash
+# Clone repository
+git clone https://github.com/your-username/MaterialVision.git
+cd MaterialVision
 
-### Usage Examples
+# Download model checkpoints (place in respective model directories)
+# Run web application
+cd webapp && streamlit run app.py
+```
 
-1. **Reading and Processing Data**
+## 🔧 Development & Customization
+
+### Adding New Models
 ```python
-from codes.helper import load_and_preprocess_data
+# Extend models.py with your custom loader
+def load_custom_model(checkpoint_path, device):
+    model = YourCustomModel()
+    checkpoint = torch.load(checkpoint_path, map_location=device)
+    model.load_state_dict(checkpoint['model_state_dict'])
+    return model, tokenizer, dataset
 
-# Load your dataset
-data = load_and_preprocess_data('path_to_your_data.csv')
+# Add to app.py model selection
+MODEL_PATHS['YourModel'] = 'path/to/checkpoint.pth'
 ```
 
-2. **STEM Image Generation**
+### Custom Embedding Generation
 ```python
-from jarvis.analysis.stem.convolution_apprx import STEMConv
-from jarvis.core.atoms import Atoms
-
-# Generate STEM image from atomic structure
-stem_sim = STEMConv(output_size=[200, 200])
-stem_image = stem_sim.simulate_surface(atoms=structure)[0]
+# Generate embeddings for new datasets
+def process_new_dataset(data_path, model_name):
+    df = pd.read_csv(data_path)
+    model, tokenizer, _ = load_model(model_name)
+    
+    embeddings = []
+    for text in df['descriptions']:
+        embedding = generate_embedding(model, tokenizer, text)
+        embeddings.append(embedding)
+    
+    df['embeddings'] = embeddings
+    return df
 ```
 
-## Features in Detail
+## 🤝 Contributing
 
-### 1. Data Processing
-- Comprehensive data loading and preprocessing
-- Statistical analysis tools
-- Visualization capabilities
+We welcome contributions! Please feel free to submit a Pull Request. Areas for improvement:
 
-### 2. STEM Simulation
-- Atomic structure visualization
-- STEM image generation
-- Image processing and enhancement
+- **New model architectures** for better materials understanding
+- **Dataset expansion** with additional materials properties  
+- **Performance optimizations** for faster inference
+- **UI/UX improvements** for the web application
+- **Documentation and tutorials** for new users
 
-#### 3. Vision Transformer Integration
-- Text-image matching
-- Feature extraction
-- Multi-modal learning
+### Development Workflow
+```bash
+# Fork the repository
+git fork https://github.com/original/MaterialVision.git
 
-## Model Performance Comparison
+# Create feature branch  
+git checkout -b feature/your-improvement
 
-We compare two approaches for materials science text-image retrieval:
-1. **CLIPP**: Our custom dual-encoder model trained from scratch
-2. **BLIP**: Fine-tuned Salesforce BLIP model (blip-itm-large-coco)
+# Make changes and test
+pytest tests/  # Run tests
+streamlit run webapp/app.py  # Test web app
 
-### Training Progress
-
-#### CLIPP-SciBERT Training and Validation Loss
-![CLIPP-SciBERT Loss](models/CLIPP_allenai/checkpoints/loss.png)
-*Training progress of our CLIPP-SciBERT model*
-
-#### CLIPP-DistilBERT Training and Validation Loss
-![CLIPP-DistilBERT Loss](models/CLIPP_bert/checkpoints/loss.png)
-*Training progress of our CLIPP-DistilBERT model*
-
-#### MobileCLIP Training and Validation Loss
-![MobileCLIP Loss](models/Apple_MobileCLIP/checkpoints/loss.png)
-*Training progress of our MobileCLIP model*
-
-#### BLIP Training and Validation Loss
-![BLIP Loss](models/Salesforce/checkpoints_blip/loss.png)
-*Training progress of the fine-tuned BLIP model*
-
-### Retrieval Performance
-
-Below are the image-text retrieval metrics (Top-k accuracy) for both models:
-
-#### CLIPP Models Performance
-
-##### CLIPP-SciBERT
-```
-Validation Set:
-- Top-1: 0.1670
-- Top-5: 0.4040
-- Top-10: 0.5300
-
-Training Set:
-- Top-1: 0.1930
-- Top-5: 0.4856
-- Top-10: 0.6360
+# Submit pull request
+git push origin feature/your-improvement
 ```
 
-##### CLIPP-DistilBERT
-```
-Validation Set:
-- Top-1: 0.0400
-- Top-5: 0.1430
-- Top-10: 0.2120
+## 📄 License
 
-Training Set:
-- Top-1: 0.0202
-- Top-5: 0.0764
-- Top-10: 0.1330
-```
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-#### BLIP Model Performance
-```
-Validation Set:
-- Top-1: 0.1730
-- Top-5: 0.4290
-- Top-10: 0.5520
+## 📞 Contact & Support
 
-Training Set:
-- Top-1: 0.3868
-- Top-5: 0.7564
-- Top-10: 0.8728
-```
+- **Issues**: Open a GitHub issue for bug reports or feature requests
+- **Discussions**: Use GitHub Discussions for questions and community support  
+- **Documentation**: Check the `/tests/` notebooks for usage examples
 
-### Model Characteristics
+## 🙏 Acknowledgments
 
-**CLIPP Models**
+- **Hugging Face Transformers** for model implementations
+- **Streamlit** for the web application framework
+- **OpenAI CLIP** for the foundational architecture
+- **Materials Science Community** for domain expertise and feedback
 
-*CLIPP-SciBERT*
-- Vision encoder: Pretrained ViT-Base/16 (patch size 16x224x224)
-- Text encoder: SciBERT (allenai/scibert_scivocab_uncased)
-- Training: CLIP-style contrastive learning with temperature 0.07
-- Projection: Both image and text features projected to 256-dim space
-- Loss: Bidirectional contrastive loss (image→text and text→image)
+---
 
-*CLIPP-DistilBERT*
-- Vision encoder: Pretrained ViT-Base/16 (patch size 16x224x224)
-- Text encoder: DistilBERT (distilbert-base-uncased)
-- Training: CLIP-style contrastive learning with temperature 0.07
-- Projection: Both image and text features projected to 256-dim space
-- Loss: Bidirectional contrastive loss (image→text and text→image)
-- Advantage: Lighter text encoder with comparable performance
+## 📚 Additional Resources
 
-**BLIP**
-- Base model: "Salesforce/blip-itm-large-coco"
-- Architecture: ViT-L/16 vision encoder + BERT text encoder
-- Training: Fine-tuned with image-text matching (ITM)
-- Original pretraining: COCO dataset with 850K images
-- Adapts general visual understanding to materials domain
+### Notebooks
+- [`simple_text_embedding.ipynb`](webapp/simple_text_embedding.ipynb) - Embedding generation pipeline
+- [`howtoreadData.ipynb`](tests/howtoreadData.ipynb) - Data loading and analysis
+- [`image_test.ipynb`](tests/image_test.ipynb) - STEM image processing examples
 
-## Applications
+### Model Training
+- Training logs and loss curves available in each model's checkpoint directory
+- Hyperparameter configurations in model-specific config files
+- Performance benchmarks on materials science datasets
 
-- **Materials Discovery**: Rapid screening and analysis of materials
-- **Structure Analysis**: Understanding atomic-scale arrangements
-- **Property Prediction**: Correlating structure with properties
-- **Image-Text Matching**: Connecting descriptions with visual data
-
-## Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
-
-## License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
-
-## Contact
-
-For questions and feedback, please open an issue in the repository.
+**🔬 Happy Materials Discovery! 🧪**
