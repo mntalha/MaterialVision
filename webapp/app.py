@@ -149,6 +149,7 @@ if 'model_name' not in st.session_state:
     st.session_state.model_name = "Apple"
     st.session_state.model, st.session_state.processor, st.session_state.dataset = load_selected_model(st.session_state.model_name)
 
+
 @st.cache_resource
 def load_features(_model_name):
     """Load precomputed features for the selected model."""
@@ -179,9 +180,6 @@ def load_features(_model_name):
     
     return corpus_vectors, text_vectors, corpus_ids, formulas, bandgaps, df
 
-corpus_vectors, text_vectors, corpus_ids, formulas, bandgaps, df = load_features(st.session_state.model_name)
-
-
 
 # Streamlit UI
 st.title("🔍 Materials Science Retrieval App")
@@ -189,17 +187,22 @@ st.title("🔍 Materials Science Retrieval App")
 # Model selection
 model_name = st.selectbox(
     "Select Model",
-    ["CLIPP-SciBERT", "CLIPP-DistilBERT", "Apple", "Salesforce"],
-    index=["CLIPP-SciBERT", "CLIPP-DistilBERT", "Apple", "Salesforce"].index(st.session_state.model_name),
+    ["CLIPP-Allenai", "CLIPP-BERT", "Apple", "Salesforce"],
+    index=["CLIPP-Allenai", "CLIPP-BERT", "Apple", "Salesforce"].index(st.session_state.model_name),
     help="Choose the model to use for retrieval"
 )
 
 # Update session state when model_name changes
 if model_name != st.session_state.model_name:
     st.session_state.model_name = model_name
+    # Clear cached data for the new model
+    load_features.clear()
+    load_dataset.clear()
     st.session_state.model, st.session_state.processor, st.session_state.dataset = load_selected_model(model_name)
-    corpus_vectors, text_vectors, corpus_ids, formulas, bandgaps = load_features(st.session_state.model_name)
     st.rerun()  # Rerun to refresh the app with the new model
+
+# Load features for current model
+corpus_vectors, text_vectors, corpus_ids, formulas, bandgaps, df = load_features(st.session_state.model_name)
 
 # Load selected model
 try:
@@ -228,8 +231,11 @@ with tab1:
                 caption, text_tokens = dataset.prepare_caption(text_query)
                 embeddings = model.get_text_features(text_tokens.to(device))
             elif model_name == 'Salesforce':
-                pass
- 
+                caption, input_ids, attention_mask = dataset.prepare_caption(text_query)
+                embeddings = model.get_text_features(input_ids=input_ids.to(device), attention_mask=attention_mask.to(device))
+            elif model_name == "CLIPP-Allenai" or model_name == "CLIPP-BERT":
+                caption, input_ids, attention_mask = dataset.prepare_caption(text_query)
+                embeddings = model.get_text_features(input_ids.view(1,-1).to(device), attention_mask.view(1,-1).to(device))
 
             # Search over the full dataset (no bandgap filter)
             sims_img = F.cosine_similarity(embeddings, corpus_vectors)
@@ -271,27 +277,21 @@ with tab2:
     k_img2txt = st.slider("Top results to show:", 1, 10, 3, key="img2txt_slider")
 
     if uploaded_image is not None:
-        img = Image.open(uploaded_image).convert("RGB")
-        if model_name == 'Salesforce':
-            # For BLIP, use image_processor specifically for images
-            processed = st.session_state.processor.image_processor(images=img, return_tensors="pt")
-            img_tensor = processed['pixel_values'].to(device)
-        else:
-            # For CLIPP models, use the transform directly
-            img_tensor = transforms.Compose([
-                transforms.Resize((224, 224)),
-                transforms.ToTensor(),
-                transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
-            ])(img).unsqueeze(0).to(device)
-            
+        # Display the uploaded image at the top
+        st.subheader("Uploaded Image")
+        uploaded_pil = Image.open(uploaded_image)
+        st.image(uploaded_pil, caption="Your uploaded image", width=300)
+        
+        img = dataset.prepare_image(uploaded_image).unsqueeze(0)
         with torch.no_grad():
-            img_feat = F.normalize(model.get_image_features(img_tensor), dim=-1)
-            sims = F.cosine_similarity(img_feat, text_vectors)
-            topk = torch.topk(sims, k_img2txt)
+            img_feat = model.get_image_features(img.to(device))  # Warm-up
+            
+        sims = F.cosine_similarity(img_feat, text_vectors)
+        topk = torch.topk(sims, k_img2txt)
         st.subheader("Top matching texts for uploaded image")
         for i in topk.indices:
-            st.markdown(f"{data_test.iloc[i.item()]['input']}  \nScore: {sims[i]:.3f}")
-            img_arr = list_to_image(data_test.iloc[i.item()]["image"])
+            st.markdown(f"{df.iloc[i.item()]['input']}  \nScore: {sims[i]:.3f}")
+            img_arr = list_to_image(df.iloc[i.item()]["image"])
             img_arr = (img_arr - img_arr.min()) / (img_arr.max() - img_arr.min())
             st.image(img_arr, caption=f"Formula: {formulas[i.item()]}, Bandgap: {bandgaps[i.item()]:.3f}")
 
@@ -340,11 +340,11 @@ with tab4:
     else:
         st.subheader(f"Showing top {min(k_bandgap, len(filtered_idx))} results within selected bandgap")
         for i in filtered_idx[:k_bandgap]:
-            img = list_to_image(data_test.iloc[i]["image"])
+            img = list_to_image(df.iloc[i]["image"])
             img = (img - img.min()) / (img.max() - img.min())
             st.image(img, caption=f"Formula: {formulas[i]}, Bandgap: {bandgaps[i]:.3f}")  # Show bandgap value
 
         # Download filtered dataset
-        filtered_data = data_test.iloc[filtered_idx]
+        filtered_data = df.iloc[filtered_idx]
         csv = filtered_data.to_csv(index=False)
         st.download_button("Download Filtered Results", csv, file_name="filtered_bandgap_results.csv")
