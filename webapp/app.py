@@ -21,14 +21,6 @@ from models import (
 # Configure device
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
-# Model paths
-MODEL_PATHS = {
-    'CLIPP-SciBERT': '../models/CLIPP_allenai/checkpoints/best_clipp.pth',
-    'CLIPP-DistilBERT': '../models/CLIPP_bert/checkpoints/best_clipp_bert.pth',
-    'Salesforce': '../models/Salesforce/checkpoints_blip/best_blip.pth',
-    'Apple': '../models/Apple_MobileCLIP/checkpoints/best_clipp_apple.pth'
-}
-
 def list_to_image(img_list, size=224):
     """Convert a JSON list to a 2D image."""
     return np.array(json.loads(img_list)).reshape(size, size)
@@ -91,45 +83,12 @@ def extract_formula_bandgap(text):
     parsed_formula = parse_chemical_formula(formula) if formula else ""
     return f"{parsed_formula} {bandgap if bandgap is not None else ''}".strip()
 
-
-# --- Dataset class ---
-class ImageTextDataset():
-    def __init__(self, dataframe, processor, model_name):
-        self.dataframe = dataframe
-        self.texts = dataframe["input"]
-        self.processor = processor
-        self.model_name = model_name
-        
-        # Define image transforms for CLIPP models
-        self.clipp_transforms = transforms.Compose([
-            transforms.Resize((224, 224)),
-            transforms.ToTensor(),
-            transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
-        ])
-
-    def __len__(self):
-        return len(self.texts)
-
-    def __getitem__(self, idx):
-        # Load and convert image
-        image = list_to_image(self.dataframe["image"][idx])
-        image = Image.fromarray(image).convert("RGB")
-        
-        # Process image based on model type
-        if self.model_name == 'BLIP':
-            # For BLIP, use image_processor specifically for images
-            processed = self.processor.image_processor(images=image, return_tensors="pt")
-            image_tensor = processed['pixel_values'][0]  # Remove batch dimension
-        else:  # CLIPP models and MobileCLIP
-            image_tensor = self.clipp_transforms(image)
-        
-        text_ = self.texts[idx]
-        id_ = self.dataframe["id"][idx]
-        formula, bandgap = extract_formula_bandgap(text_)
-        return image_tensor, text_, id_, formula, bandgap
-    
-
-
+MODEL_PATHS = {
+    'CLIPP-Allenai': '../models/CLIPP_allenai/checkpoints/best_clipp.pth',
+    'CLIPP-BERT': '../models/CLIPP_bert/checkpoints/best_clipp_bert.pth',
+    'Salesforce': '../models/Salesforce/checkpoints_blip/best_blip.pth',
+    'Apple': '../models/Apple_MobileCLIP/checkpoints/best_clipp_apple.pth'
+}
 
 # Load model
 @st.cache_resource
@@ -139,146 +98,88 @@ def load_selected_model(model_name):
         raise ValueError(f"Unknown model: {model_name}")
     
     checkpoint_path = MODEL_PATHS[model_name]
-    
-    if model_name == 'CLIPP-SciBERT':
-        model, processor = load_clipp_scibert(checkpoint_path, device)
-    elif model_name == 'CLIPP-DistilBERT':
-        model, processor = load_clipp_distilbert(checkpoint_path, device)
+
+    if model_name == 'CLIPP-Allenai':
+        model, processor, dataset = load_clipp_scibert(checkpoint_path, device)
+    elif model_name == 'CLIPP-BERT':
+        model, processor, dataset = load_clipp_distilbert(checkpoint_path, device)
     elif model_name == 'Apple':
-        model, processor = load_mobileclip(checkpoint_path, device)
+        model, processor, dataset = load_mobileclip(checkpoint_path, device)
     elif model_name == 'Salesforce':
-        model, processor = load_blip(checkpoint_path, device)
+        model, processor, dataset = load_blip(checkpoint_path, device)
     else:
         raise ValueError(f"Unknown model: {model_name}")
-    
-    return model, processor
 
+    return model, processor, dataset
 
-
-
-import tqdm
+# Load BLIP embeddings from saved pickle file
+import pickle
+import pandas as pd
+import numpy as np
+from pathlib import Path
 
 # --- Load dataset ---
 @st.cache_resource
-def load_dataset(path='../data/alpaca_mbj_bandgap_test.csv', _processor=None, _model_name=None):
-    data_test = pd.read_csv(path)[:100]
-    dataset = ImageTextDataset(data_test, _processor, _model_name)
-    dataloader = torch.utils.data.DataLoader(
-        dataset,
-        batch_size=16,  # Reduced batch size
-        shuffle=False,
-        num_workers=2,  # Use multiple workers for data loading
-        pin_memory=True  # Speed up data transfer to GPU
-    )
-    return data_test, dataset, dataloader
+def load_dataset(model_name):
+    # Define embeddings path based on model_name
+    embeddings_dir = Path('./embeddings')
+    if model_name == "Apple":
+        embeddings_path = embeddings_dir / "val_df_with_embeddings_apple.pkl"
+    elif model_name == "Salesforce":
+        embeddings_path = embeddings_dir / "val_df_with_embeddings_blip.pkl"
+    elif model_name == "CLIPP-Allenai":
+        embeddings_path = embeddings_dir / "val_df_with_embeddings_scibert.pkl"
+    elif model_name == "CLIPP-BERT":
+        embeddings_path = embeddings_dir / "val_df_with_embeddings_distilbert.pkl"
+    else:
+        raise ValueError(f"Unknown model_name: {model_name}")
+
+    print(f"🔄 Loading embeddings from: {embeddings_path}")
+
+    if embeddings_path.exists():
+        with open(embeddings_path, 'rb') as f:
+            embeddings_data = pickle.load(f)
+    else:
+        raise FileNotFoundError(f"Embeddings file not found: {embeddings_path}")
+    
+    return embeddings_data
 
 # Initialize with default model
 if 'model_name' not in st.session_state:
-    st.session_state.model_name = "CLIPP-SciBERT"
-    st.session_state.model, st.session_state.processor = load_selected_model(st.session_state.model_name)
-
-# Load dataset with the current model's processor
-data_test, dataset, dataloader = load_dataset(
-    _processor=st.session_state.processor,
-    _model_name=st.session_state.model_name
-)
-
-
+    st.session_state.model_name = "Apple"
+    st.session_state.model, st.session_state.processor, st.session_state.dataset = load_selected_model(st.session_state.model_name)
 
 @st.cache_resource
-def load_features():
-    corpus_vectors, text_vectors, corpus_ids = [], [], []
-    formulas, bandgaps = [], []
+def load_features(_model_name):
+    """Load precomputed features for the selected model."""
+    df = load_dataset(_model_name)
     
-    # Set smaller batch size for feature extraction
-    batch_size = 16
-    n_samples = len(dataset)
-    
-    for i in tqdm.tqdm(range(0, n_samples, batch_size)):
-        batch_indices = range(i, min(i + batch_size, n_samples))
-        batch = [dataset[j] for j in batch_indices]
-        
-        # Collate batch manually
-        imgs = torch.stack([item[0] for item in batch]).to(device)
-        texts = [item[1] for item in batch]
-        ids = [item[2] for item in batch]
-        current_formulas = [item[3] for item in batch]
-        current_bandgaps = [item[4] for item in batch]
-        
-        # Process in smaller chunks with memory cleanup
-        with torch.no_grad():  # Disable gradient computation
-            if st.session_state.model_name == 'BLIP':
-                # Process text input
-                text_inputs = st.session_state.processor.tokenizer(
-                    texts,
-                    padding=True,
-                    truncation=True,
-                    max_length=128,
-                    return_tensors='pt'
-                )
-                # Move tokenizer outputs to device
-                input_ids = text_inputs['input_ids'].to(device)
-                attention_mask = text_inputs['attention_mask'].to(device)
-                
-                img_features = F.normalize(st.session_state.model.get_image_features(imgs), dim=-1)
-                txt_features = F.normalize(st.session_state.model.get_text_features(
-                    input_ids=input_ids,
-                    attention_mask=attention_mask
-                ), dim=-1)
-            else:  # CLIPP models
-                txts = st.session_state.processor(
-                    texts,
-                    padding=True,
-                    truncation=True,
-                    max_length=128,
-                    return_tensors='pt'
-                )
-                # Move required tensors to device and remove token_type_ids
-                input_ids = txts['input_ids'].to(device)
-                attention_mask = txts['attention_mask'].to(device)
-                img_features = F.normalize(st.session_state.model.get_image_features(imgs), dim=-1)
-                txt_features = F.normalize(
-                    st.session_state.model.get_text_features(input_ids, attention_mask),
-                    dim=-1
-                )
-            
-            # Move results to CPU but keep as torch tensors
-            img_features = img_features.cpu()
-            txt_features = txt_features.cpu()
-            
-            corpus_vectors.append(img_features)
-            text_vectors.append(txt_features)
-            corpus_ids.extend(ids)
-            formulas.extend(current_formulas)
-            bandgaps.extend(current_bandgaps)
-        
-        # Clear GPU cache
-        torch.cuda.empty_cache()
-    
-    # Combine results and convert to correct types
-    corpus_vectors = torch.cat(corpus_vectors)
-    text_vectors = torch.cat(text_vectors)
-    corpus_ids = torch.tensor(corpus_ids)
-    formulas = np.array(formulas)
-    bandgaps = torch.tensor(bandgaps, dtype=torch.float32)
-    
-    # Sort all arrays
-    sort_indices = torch.argsort(corpus_ids)
-    corpus_vectors = corpus_vectors[sort_indices]
-    text_vectors = text_vectors[sort_indices]
-    corpus_ids = corpus_ids[sort_indices]
-    formulas = formulas[sort_indices.cpu().numpy()]
-    bandgaps = bandgaps[sort_indices]
-    
-    # Move tensors to device
-    corpus_vectors = corpus_vectors.to(device)
-    text_vectors = text_vectors.to(device)
-    corpus_ids = corpus_ids.to(device)
-    bandgaps = bandgaps.to(device)
-    
-    return corpus_vectors, text_vectors, corpus_ids, formulas, bandgaps
+    # Use torch.stack to properly combine embeddings into tensors
+    corpus_vectors = torch.stack([torch.tensor(emb) for emb in df['val_img_embs']]).squeeze().to(device)
+    text_vectors = torch.stack([torch.tensor(emb) for emb in df['val_txt_embs']]).squeeze().to(device)
 
-corpus_vectors, text_vectors, corpus_ids, formulas, bandgaps = load_features()
+    corpus_ids = df['id']
+    # Extract formulas and bandgaps
+    formulas = []
+    bandgaps = []
+    for text in df['input']:
+        formula_match = re.search(r'The chemical formula is ([A-Za-z0-9]+)', text)
+        bandgap_match = re.search(r'mbj_bandgap value is ([0-9.]+)', text)
+        formula = formula_match.group(1) if formula_match else "N/A"
+        bandgap_str = bandgap_match.group(1) if bandgap_match else None
+        if bandgap_str:
+            try:
+                bandgap = float(bandgap_str.strip().rstrip('.'))
+            except Exception:
+                bandgap = None
+        else:
+            bandgap = None
+        formulas.append(formula)
+        bandgaps.append(bandgap)
+    
+    return corpus_vectors, text_vectors, corpus_ids, formulas, bandgaps, df
+
+corpus_vectors, text_vectors, corpus_ids, formulas, bandgaps, df = load_features(st.session_state.model_name)
 
 
 
@@ -289,12 +190,20 @@ st.title("🔍 Materials Science Retrieval App")
 model_name = st.selectbox(
     "Select Model",
     ["CLIPP-SciBERT", "CLIPP-DistilBERT", "Apple", "Salesforce"],
+    index=["CLIPP-SciBERT", "CLIPP-DistilBERT", "Apple", "Salesforce"].index(st.session_state.model_name),
     help="Choose the model to use for retrieval"
 )
 
+# Update session state when model_name changes
+if model_name != st.session_state.model_name:
+    st.session_state.model_name = model_name
+    st.session_state.model, st.session_state.processor, st.session_state.dataset = load_selected_model(model_name)
+    corpus_vectors, text_vectors, corpus_ids, formulas, bandgaps = load_features(st.session_state.model_name)
+    st.rerun()  # Rerun to refresh the app with the new model
+
 # Load selected model
 try:
-    model, processor = load_selected_model(model_name)
+    model, processor, dataset = st.session_state.model, st.session_state.processor, st.session_state.dataset
     st.success(f"Successfully loaded {model_name}")
 except Exception as e:
     st.error(f"Error loading {model_name}: {str(e)}")
@@ -307,7 +216,7 @@ with tab1:
     st.header("Text-to-Image & Text-to-Text Retrieval")
     text_query = st.text_input(
         "Enter a materials-related description:", 
-        value="The chemical formula is UGe2Pt2. The mbj_bandgap value is 0.0."
+        value="The chemical formula is LiGeS. The mbj_bandgap value is 0.0."
     )
     k = st.slider("Number of top results to show:", 1, 10, 3)
 
@@ -315,41 +224,16 @@ with tab1:
         st.write("Searching...")
         print("Searching for text...")
         with torch.no_grad():
-            if st.session_state.model_name == 'BLIP':
-                # Handle BLIP text processing using our custom processor class
-                text_inputs = st.session_state.processor.tokenizer(
-                    text_query,
-                    padding=True,
-                    truncation=True,
-                    max_length=128,
-                    return_tensors='pt'
-                )
-                # Move tokenizer outputs to device
-                input_ids = text_inputs['input_ids'].to(device)
-                attention_mask = text_inputs['attention_mask'].to(device)
-                text_feat = F.normalize(model.get_text_features(
-                    input_ids=input_ids,
-                    attention_mask=attention_mask
-                ), dim=-1)
-            else:  # CLIPP models
-                text_input = processor(
-                    text_query,
-                    padding=True,
-                    truncation=True,
-                    max_length=128,
-                    return_tensors='pt'
-                )
-                # Move required tensors to device and remove token_type_ids
-                input_ids = text_input['input_ids'].to(device)
-                attention_mask = text_input['attention_mask'].to(device)
-                text_feat = F.normalize(
-                    model.get_text_features(input_ids, attention_mask),
-                    dim=-1
-                )
+            if model_name == 'Apple':
+                caption, text_tokens = dataset.prepare_caption(text_query)
+                embeddings = model.get_text_features(text_tokens.to(device))
+            elif model_name == 'Salesforce':
+                pass
+ 
 
             # Search over the full dataset (no bandgap filter)
-            sims_img = F.cosine_similarity(text_feat, corpus_vectors)
-            sims_txt = F.cosine_similarity(text_feat, text_vectors)
+            sims_img = F.cosine_similarity(embeddings, corpus_vectors)
+            sims_txt = F.cosine_similarity(embeddings, text_vectors)
             topk_img = torch.topk(sims_img, k)
             topk_txt = torch.topk(sims_txt, k)
 
@@ -360,13 +244,13 @@ with tab1:
                 st.subheader("Top Matching Texts")
                 for i in topk_txt.indices:
                     idx = i.item()
-                    st.markdown(f"**{data_test.iloc[idx]['input']}**  \nScore: {sims_txt[i]:.3f}")
+                    st.markdown(f"**{df.iloc[idx]['input']}**  \nScore: {sims_txt[i]:.3f}")
 
             with cols[1]:
                 st.subheader("Top Matching Images")
                 for i in topk_img.indices:
                     idx = i.item()
-                    img = list_to_image(data_test.iloc[idx]["image"])
+                    img = list_to_image(df.iloc[idx]["image"])
                     img = (img - img.min()) / (img.max() - img.min())
                     st.image(
                         img, 
@@ -375,7 +259,7 @@ with tab1:
 
             with cols[2]:
                 st.subheader("Download Results")
-                top_results = data_test.iloc[topk_img.indices.cpu().numpy()]
+                top_results = df.iloc[topk_img.indices.cpu().numpy()]
                 csv = top_results.to_csv(index=False)
                 st.download_button("Download CSV", csv, file_name="top_results.csv")
 
@@ -388,7 +272,7 @@ with tab2:
 
     if uploaded_image is not None:
         img = Image.open(uploaded_image).convert("RGB")
-        if st.session_state.model_name == 'BLIP':
+        if model_name == 'Salesforce':
             # For BLIP, use image_processor specifically for images
             processed = st.session_state.processor.image_processor(images=img, return_tensors="pt")
             img_tensor = processed['pixel_values'].to(device)
