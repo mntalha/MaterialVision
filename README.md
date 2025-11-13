@@ -316,28 +316,6 @@ The web app provides real-time metrics:
 - **Performance metrics** with Top-k accuracy display
 - **Chemical formula parsing** with element separation
 - **Bandgap range filtering** for targeted material discovery
-- **t-SNE embedding visualization** for exploring multimodal alignment
-
-## 📊 Embedding Visualization
-
-### t-SNE Analysis
-Each model evaluation notebook includes t-SNE (t-Distributed Stochastic Neighbor Embedding) visualization to analyze how well the models align image and text embeddings in a shared space:
-
-- **Dimensionality Reduction**: Projects high-dimensional embeddings to 2D for visualization
-- **Multimodal Alignment**: Shows how closely paired text-image embeddings cluster together
-- **Model Comparison**: Visual assessment of different model architectures' alignment quality
-- **Pair Highlighting**: First 15 text-image pairs are connected with lines to show correspondence
-
-#### Generated Visualizations:
-- `clipp_scibert_tsne.png` - CLIPP-SciBERT embedding space
-- `clipp_distilbert_tsne.png` - CLIPP-DistilBERT embedding space  
-- `mobileclip_apple_tsne.png` - Apple MobileCLIP embedding space
-- `salesforce_blip_tsne.png` - Salesforce BLIP embedding space
-
-Good multimodal alignment is indicated by:
-- **Close clustering** of corresponding text-image pairs
-- **Short connection lines** between matched embeddings
-- **Distinct separation** from non-matching pairs
 
 ### Export & Download
 - **CSV export** of search results with metadata
