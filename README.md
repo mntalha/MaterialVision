@@ -194,31 +194,39 @@ results, scores = search_by_bandgap_range(
 #### Validation Set Results
 ```
 CLIPP-SciBERT:
-├── Top-1:  36.9%  ├── Top-5:  65.1%  └── Top-10: 74.9%
+├── Text→Image: Top-1: 36.9%  Top-5: 65.1%  Top-10: 74.9%
+└── Image→Text: Top-1: 36.6%  Top-5: 66.2%  Top-10: 74.9%
 
 CLIPP-DistilBERT: 
-├── Top-1:  12.5%  ├── Top-5:  36.6%  └── Top-10: 49.8%
+├── Text→Image: Top-1: 12.5%  Top-5: 36.6%  Top-10: 49.8%
+└── Image→Text: Top-1: 14.2%  Top-5: 37.4%  Top-10: 50.6%
 
 Apple MobileCLIP:
-├── Top-1:  38.0%  ├── Top-5:  67.0%  └── Top-10: 76.7%
+├── Text→Image: Top-1: 38.0%  Top-5: 67.0%  Top-10: 76.7%
+└── Image→Text: Top-1: 35.9%  Top-5: 65.4%  Top-10: 77.6%
 
 BLIP (Salesforce):
-├── Top-1:  46.8%  ├── Top-5:  72.9%  └── Top-10: 80.9%
+├── Text→Image: Top-1: 46.8%  Top-5: 72.9%  Top-10: 80.9%
+└── Image→Text: Top-1: 45.3%  Top-5: 73.6%  Top-10: 80.1%
 ```
 
 #### Training Set Results  
 ```
 CLIPP-SciBERT:
-├── Top-1:  44.9%  ├── Top-5:  80.5%  └── Top-10: 90.3%
+├── Text→Image: Top-1: 44.9%  Top-5: 80.5%  Top-10: 90.3%
+└── Image→Text: Top-1: 47.2%  Top-5: 81.9%  Top-10: 90.9%
 
 CLIPP-DistilBERT:
-├── Top-1:  14.6%  ├── Top-5:  39.3%  └── Top-10: 52.6%
+├── Text→Image: Top-1: 14.6%  Top-5: 39.3%  Top-10: 52.6%
+└── Image→Text: Top-1: 14.3%  Top-5: 40.3%  Top-10: 54.5%
 
 Apple MobileCLIP:
-├── Top-1:  63.0%  ├── Top-5:  93.8%  └── Top-10: 97.8%
+├── Text→Image: Top-1: 63.0%  Top-5: 93.8%  Top-10: 97.8%
+└── Image→Text: Top-1: 60.5%  Top-5: 92.4%  Top-10: 97.4%
 
 BLIP (Salesforce):
-├── Top-1:  57.1%  ├── Top-5:  90.5%  └── Top-10: 96.9%
+├── Text→Image: Top-1: 57.1%  Top-5: 90.5%  Top-10: 96.9%
+└── Image→Text: Top-1: 56.6%  Top-5: 90.4%  Top-10: 96.4%
 ```
 
 ### Model Architecture Details
