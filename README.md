@@ -69,64 +69,100 @@ embeddings = model.get_text_features(tokens['input_ids'], tokens['attention_mask
 
 ## 📊 Performance Results
 
-### 🎯 Validation Set (Text↔Image Retrieval)
+### 🎯 Validation Set Performance
 
-| Model | Text→Image Top-10 | Image→Text Top-10 | Average |
-|-------|------------------|------------------|---------|
-| **BLIP (Salesforce)** | **80.9%** | **80.1%** | **80.5%** 🥇 |
-| **Apple MobileCLIP** | 76.7% | 77.6% | 77.2% |
-| **CLIPP-SciBERT** | 74.9% | 74.9% | 74.9% |
-| **CLIPP-DistilBERT** | 49.8% | 50.6% | 50.2% |
+| Model | **Text→Image** | | | **Image→Text** | | |
+|-------|:---:|:---:|:---:|:---:|:---:|:---:|
+| | **Top-1** | **Top-5** | **Top-10** | **Top-1** | **Top-5** | **Top-10** |
+| **BLIP (Salesforce)** 🥇 | **46.8%** | **72.9%** | **80.9%** | **45.3%** | **73.6%** | **80.1%** |
+| **Apple MobileCLIP** | 38.0% | 67.0% | 76.7% | 35.9% | 65.4% | 77.6% |
+| **CLIPP-SciBERT** | 36.9% | 65.1% | 74.9% | 36.6% | 66.2% | 74.9% |
+| **CLIPP-DistilBERT** | 12.5% | 36.6% | 49.8% | 14.2% | 37.4% | 50.6% |
 
-### 🏋️ Training Set (Text↔Image Retrieval)
+### 🏋️ Training Set Performance
 
-| Model | Text→Image Top-10 | Image→Text Top-10 | Average |
-|-------|------------------|------------------|---------|
-| **Apple MobileCLIP** | **97.8%** | **97.4%** | **97.6%** 🥇 |
-| **BLIP (Salesforce)** | 96.9% | 96.4% | 96.7% |
-| **CLIPP-SciBERT** | 90.3% | 90.9% | 90.6% |
-| **CLIPP-DistilBERT** | 52.6% | 54.5% | 53.6% |
+| Model | **Text→Image** | | | **Image→Text** | | |
+|-------|:---:|:---:|:---:|:---:|:---:|:---:|
+| | **Top-1** | **Top-5** | **Top-10** | **Top-1** | **Top-5** | **Top-10** |
+| **Apple MobileCLIP** 🥇 | **63.0%** | **93.8%** | **97.8%** | **60.5%** | **92.4%** | **97.4%** |
+| **BLIP (Salesforce)** | 57.1% | 90.5% | 96.9% | 56.6% | 90.4% | 96.4% |
+| **CLIPP-SciBERT** | 44.9% | 80.5% | 90.3% | 47.2% | 81.9% | 90.9% |
+| **CLIPP-DistilBERT** | 14.6% | 39.3% | 52.6% | 14.3% | 40.3% | 54.5% |
+
+### 🔍 **Key Performance Insights**
+
+- **📈 Top-1 Accuracy**: BLIP achieves best exact-match performance (46.1% validation)
+- **🎯 Top-5 Accuracy**: Most models achieve 65%+ recall within top-5 candidates  
+- **🏆 Top-10 Accuracy**: BLIP leads with 80.5% validation, Apple MobileCLIP dominates training (97.6%)
+- **⚡ Speed vs Accuracy**: DistilBERT fastest but lower accuracy; BLIP best accuracy-performance balance
+
+### 📚 **Understanding Evaluation Metrics**
+
+| Metric | Definition | Interpretation |
+|--------|------------|----------------|
+| **Top-1 Accuracy** | Correct result ranked #1 | Exact match precision - how often the perfect match appears first |
+| **Top-5 Accuracy** | Correct result in top 5 | Practical retrieval - good results within reasonable candidates |
+| **Top-10 Accuracy** | Correct result in top 10 | System recall - ability to find relevant matches in broader search |
+
+**Example**: For query "silicon carbide semiconductor"
+- **Top-1 = 46.8%**: Perfect match appears first 47% of the time
+- **Top-5 = 72.9%**: Perfect match appears in top-5 results 73% of the time  
+- **Top-10 = 80.9%**: Perfect match appears in top-10 results 81% of the time
 
 <details>
-<summary>📈 Detailed Performance Breakdown</summary>
+<summary>📈 Complete Performance Breakdown by Model</summary>
 
-#### Validation Set Results
+### 🔬 **BLIP (Salesforce) - Best Overall Performance**
 ```
-CLIPP-SciBERT:
-├── Text→Image: Top-1: 36.9%  Top-5: 65.1%  Top-10: 74.9%
-└── Image→Text: Top-1: 36.6%  Top-5: 66.2%  Top-10: 74.9%
-
-CLIPP-DistilBERT: 
-├── Text→Image: Top-1: 12.5%  Top-5: 36.6%  Top-10: 49.8%
-└── Image→Text: Top-1: 14.2%  Top-5: 37.4%  Top-10: 50.6%
-
-Apple MobileCLIP:
-├── Text→Image: Top-1: 38.0%  Top-5: 67.0%  Top-10: 76.7%
-└── Image→Text: Top-1: 35.9%  Top-5: 65.4%  Top-10: 77.6%
-
-BLIP (Salesforce):
+Validation Set:
 ├── Text→Image: Top-1: 46.8%  Top-5: 72.9%  Top-10: 80.9%
 └── Image→Text: Top-1: 45.3%  Top-5: 73.6%  Top-10: 80.1%
-```
 
-#### Training Set Results  
-```
-CLIPP-SciBERT:
-├── Text→Image: Top-1: 44.9%  Top-5: 80.5%  Top-10: 90.3%
-└── Image→Text: Top-1: 47.2%  Top-5: 81.9%  Top-10: 90.9%
-
-CLIPP-DistilBERT:
-├── Text→Image: Top-1: 14.6%  Top-5: 39.3%  Top-10: 52.6%
-└── Image→Text: Top-1: 14.3%  Top-5: 40.3%  Top-10: 54.5%
-
-Apple MobileCLIP:
-├── Text→Image: Top-1: 63.0%  Top-5: 93.8%  Top-10: 97.8%
-└── Image→Text: Top-1: 60.5%  Top-5: 92.4%  Top-10: 97.4%
-
-BLIP (Salesforce):
+Training Set:  
 ├── Text→Image: Top-1: 57.1%  Top-5: 90.5%  Top-10: 96.9%
 └── Image→Text: Top-1: 56.6%  Top-5: 90.4%  Top-10: 96.4%
 ```
+
+### 📱 **Apple MobileCLIP - Best Training Performance**
+```
+Validation Set:
+├── Text→Image: Top-1: 38.0%  Top-5: 67.0%  Top-10: 76.7%
+└── Image→Text: Top-1: 35.9%  Top-5: 65.4%  Top-10: 77.6%
+
+Training Set:
+├── Text→Image: Top-1: 63.0%  Top-5: 93.8%  Top-10: 97.8%
+└── Image→Text: Top-1: 60.5%  Top-5: 92.4%  Top-10: 97.4%
+```
+
+### 🧪 **CLIPP-SciBERT - Scientific Text Specialist**
+```
+Validation Set:
+├── Text→Image: Top-1: 36.9%  Top-5: 65.1%  Top-10: 74.9%
+└── Image→Text: Top-1: 36.6%  Top-5: 66.2%  Top-10: 74.9%
+
+Training Set:
+├── Text→Image: Top-1: 44.9%  Top-5: 80.5%  Top-10: 90.3%
+└── Image→Text: Top-1: 47.2%  Top-5: 81.9%  Top-10: 90.9%
+```
+
+### ⚡ **CLIPP-DistilBERT - Fast Inference**
+```
+Validation Set:
+├── Text→Image: Top-1: 12.5%  Top-5: 36.6%  Top-10: 49.8%
+└── Image→Text: Top-1: 14.2%  Top-5: 37.4%  Top-10: 50.6%
+
+Training Set:
+├── Text→Image: Top-1: 14.6%  Top-5: 39.3%  Top-10: 52.6%
+└── Image→Text: Top-1: 14.3%  Top-5: 40.3%  Top-10: 54.5%
+```
+
+### 📊 **Performance Summary**
+- **🥇 Best Top-1**: BLIP (46.8% validation) 
+- **🥈 Best Top-5**: BLIP (73.3% average validation)
+- **🥉 Best Top-10**: BLIP (80.5% validation), Apple MobileCLIP (97.6% training)
+- **⚡ Fastest**: DistilBERT (lowest computational cost)
+- **🔬 Most Balanced**: SciBERT (good accuracy + scientific vocabulary)
+
 </details>
 
 ---
