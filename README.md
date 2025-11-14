@@ -7,6 +7,12 @@
 
 MaterialVision is an advanced multimodal retrieval system that bridges materials science textual descriptions with STEM (Scanning Transmission Electron Microscopy) imaging data. It features an interactive web application for text-to-image and image-to-text retrieval using state-of-the-art vision-language models.
 
+## 📱 Web Application Preview
+
+![MaterialVision App Interface](outputs/appview.png)
+
+*Interactive web interface featuring text-to-image search, image upload, model comparison, and real-time similarity analysis.*
+
 ---
 
 ## 🚀 Quick Start
